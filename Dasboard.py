@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ໜ້າຜົນລະອຽດແບບໃໝ່ v11"
+APP_VERSION = "ລຸ້ນ: ແບບນຸ່ມນວນສຳລັບເດັກ v12"
 
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
@@ -141,10 +141,32 @@ st.markdown(
     .friendly-card {
         padding: 18px 20px;
         border-radius: 20px;
-        background: white;
+        background: rgba(255,255,255,0.96);
         border: 1px solid #e9eef8;
         box-shadow: 0 8px 22px rgba(101, 119, 168, 0.08);
         margin-bottom: 14px;
+    }
+
+    div[data-testid="stMetric"] {
+        background: rgba(255,255,255,0.96);
+        border: 1px solid #e9eef8;
+        padding: 14px 16px;
+        border-radius: 18px;
+        box-shadow: 0 8px 18px rgba(101, 119, 168, 0.06);
+    }
+
+    div[data-testid="stAlert"] {
+        border-radius: 18px;
+    }
+
+    div[data-baseweb="select"], div[data-baseweb="input"] {
+        border-radius: 14px !important;
+    }
+
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(255,255,255,0.72);
+        border: 1px solid #edf1f7;
+        border-radius: 22px;
     }
 
     .hero-box {
@@ -1308,6 +1330,28 @@ def build_detail_analysis(input_dict, risk, class_probabilities, confidence, stu
     }
 
 
+def soft_intro(title, subtitle, emoji="🌈"):
+    st.markdown(f"""
+    <div class='hero-box'>
+        <div style='font-size:28px; font-weight:700; color:#23334d;'>{emoji} {title}</div>
+        <div style='font-size:16px; color:#42546b; margin-top:8px;'>{subtitle}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def soft_card(title, text, emoji="💡"):
+    st.markdown(f"""
+    <div class='friendly-card'>
+        <div class='mini-title'>{emoji} {title}</div>
+        <div style='font-size:17px; color:#31445f; line-height:1.6;'>{text}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def soft_badge(text, style_class="risk-low"):
+    st.markdown(f"<div class='soft-pill {style_class}'>{text}</div>", unsafe_allow_html=True)
+
+
 def detail_summary_text(detail):
     risk_lao = detail.get("risk_lao", "ບໍ່ລະບຸ")
     top_categories = detail.get("top_categories", [])
@@ -1341,7 +1385,7 @@ def show_detail_result_page():
     }.get(risk_value, "risk-low")
 
     top_categories = detail.get("top_categories", [])
-    top_text = "、".join(top_categories[:3]) if top_categories else "ບໍ່ພົບຈຸດທີ່ກັງວົນຫຼາຍ"
+    top_text = ", ".join(top_categories[:3]) if top_categories else "ບໍ່ພົບຈຸດທີ່ກັງວົນຫຼາຍ"
 
     st.markdown(f"""
     <div class='hero-box'>
@@ -1442,9 +1486,10 @@ def show_detail_result_page():
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🏠 ໜ້າຫຼັກ")
+st.sidebar.title("🏠 ບ້ານຂອງເຮົາ")
 st.sidebar.caption("ເມນູ")
 st.sidebar.caption(APP_VERSION)
+st.sidebar.markdown("<div style='font-size:13px;color:#6b7a90;'>ແອັບນີ້ອອກແບບໃຫ້ອ່ານງ່າຍ ແລະ ໃຊ້ງ່າຍສຳລັບເດັກນ້ອຍ ແລະ ໄວລຸ້ນ</div>", unsafe_allow_html=True)
 
 page = st.sidebar.radio(
     "ເລືອກໜ້າ",
@@ -1463,21 +1508,24 @@ page = st.sidebar.radio(
 # =========================================================
 
 if page == "ໜ້າຫຼັກ":
-    st.header("ພາບລວມຂອງແດຊບອດ")
+    soft_intro(
+        "ຍິນດີຕ້ອນຮັບ",
+        "ແອັບນີ້ຊ່ວຍຄັດກອງຄວາມຮູ້ສຶກເບື້ອງຕົ້ນ. ອ່ານງ່າຍ, ສີນຸ່ມ, ແລະ ເຫັນຜົນໄດ້ຊັດ.",
+        "🏡"
+    )
 
     st.info(
-        "ແດຊບອດນີ້ໃຊ້ໂມເດວປັນຍາປະດິດທີ່ຝຶກແລ້ວ. "
-        "ລະບົບຈະຊ່ວຍຄັດກອງຄວາມສ່ຽງ ແລະ ແຈ້ງທີ່ປຶກສາເມື່ອຜົນຢູ່ໃນລະດັບທີ່ຄວນຕິດຕາມ."
+        "ແອັບນີ້ຊ່ວຍຄັດກອງຄວາມສ່ຽງເບື້ອງຕົ້ນ. "
+        "ຖ້າຜົນບອກວ່າຄວນຕິດຕາມ, ລະບົບຈະຊ່ວຍແຈ້ງທີ່ປຶກສາ."
     )
 
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("ຄວາມແມ່ນຍຳໃນຊຸດທົດສອບ", "92.81%")
+    col1.metric("ຄວາມແມ່ນຍຳ", "92.81%")
     col2.metric("ຄວາມແມ່ນຍຳແບບສົມດຸນ", "96.99%")
     col3.metric("ຄະແນນລວມ", "96.28%")
 
-    st.subheader("ໂມເດວທີ່ກຳລັງໃຊ້")
-    st.success("ໂມເດວຖືກໂຫຼດສຳເລັດແລ້ວ")
+    soft_card("ໂມເດວພ້ອມແລ້ວ", "ຕອນນີ້ລະບົບພ້ອມໃຫ້ເຈົ້າປ້ອນຂໍ້ມູນ ແລະ ເບິ່ງຜົນໄດ້ເລີຍ.", "✅")
 
     model_data = pd.DataFrame({
         "ຕົວຊີ້ວັດ": [
@@ -1502,9 +1550,13 @@ if page == "ໜ້າຫຼັກ":
 # =========================================================
 
 elif page == "ຜົນຂອງໂມເດວ":
-    st.header("ຜົນຂອງໂມເດວ")
+    soft_intro(
+        "ຜົນຂອງໂມເດວ",
+        "ໜ້ານີ້ບອກວ່າ ລະບົບທຳວຽກໄດ້ດີປານໃດ ໂດຍໃຊ້ຄຳທີ່ອ່ານງ່າຍ.",
+        "📊"
+    )
 
-    st.write("ໜ້ານີ້ສະແດງຜົນການທົດສອບໂມເດວກັບຂໍ້ມູນຈິງ.")
+    soft_card("ອ່ານງ່າຍ", "ຕົວເລກຫນ້ານີ້ແມ່ນຜົນທົດສອບຂອງລະບົບກັບຂໍ້ມູນຈິງ.", "💙")
 
     st.subheader("ຕາຕະລາງຜົນການຈັດປະເພດ")
 
@@ -1537,12 +1589,15 @@ elif page == "ຜົນຂອງໂມເດວ":
 # =========================================================
 
 elif page == "ທຳນາຍຄວາມສ່ຽງ":
-    st.header("ທຳນາຍຄວາມສ່ຽງຂອງນັກຮຽນ")
+    soft_intro(
+        "ກອກຂໍ້ມູນເພື່ອຄັດກອງ",
+        "ຕອບຕາມຄວາມຈິງໄດ້ເລີຍ. ບໍ່ມີຄຳຕອບຖືກ ຫຼື ຜິດ.",
+        "📝"
+    )
 
     st.info(
-        "ກະລຸນາຕອບຕາມຄວາມຈິງ. "
-        "ຄຳຕອບບໍ່ມີຖືກ ຫຼື ຜິດ. "
-        "ເລກ 0 ແມ່ນຍັງບໍ່ໄດ້ຕອບ. ເລກ 1 ແມ່ນນ້ອຍຫຼາຍ. ເລກ 5 ແມ່ນຫຼາຍຫຼາຍ."
+        "ເລກ 0 ໝາຍເຖິງ ຍັງບໍ່ໄດ້ຕອບ. ເລກ 1 ແມ່ນນ້ອຍຫຼາຍ. ເລກ 5 ແມ່ນຫຼາຍຫຼາຍ. "
+        "ກະລຸນາຕອບໃຫ້ຄົບທຸກຂໍ້ກ່ອນກົດສົ່ງ."
     )
 
     user_input = {}
