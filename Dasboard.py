@@ -6,8 +6,6 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ປ້າຍຄຳຖາມລາວ v6"
-
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
 # =========================================================
@@ -23,8 +21,8 @@ AUTO_COUNSELOR_LEVELS = ["Moderate", "Severe"]
 def send_report_to_n8n(report_data):
     if not N8N_WEBHOOK_URL:
         st.warning(
-            "ຍັງບໍ່ໄດ້ຕັ້ງລະບົບສົ່ງແຈ້ງເຕືອນ. "
-            "ການທຳນາຍຍັງໃຊ້ໄດ້, ແຕ່ການສົ່ງແຈ້ງເຕືອນຈະຍັງບໍ່ເຮັດວຽກ."
+            "ຍັງບໍ່ໄດ້ຕັ້ງ N8N_WEBHOOK_URL ໃນ Streamlit Secrets. "
+            "ການທຳນາຍຍັງໃຊ້ໄດ້, ແຕ່ການສົ່ງໄປ n8n ຈະບໍ່ເຮັດວຽກ."
         )
         return False
 
@@ -38,12 +36,12 @@ def send_report_to_n8n(report_data):
         if response.status_code in [200, 201]:
             return True
 
-        st.error(f"ລະບົບແຈ້ງເຕືອນມີຂໍ້ຜິດພາດ: {response.status_code}")
+        st.error(f"ລະບົບ n8n ຕອບກັບຂໍ້ຜິດພາດ: {response.status_code}")
         st.write(response.text)
         return False
 
     except Exception as e:
-        st.error(f"ບໍ່ສາມາດສົ່ງຜົນໄປຫາລະບົບແຈ້ງເຕືອນໄດ້: {e}")
+        st.error(f"ບໍ່ສາມາດສົ່ງຜົນໄປຫາ n8n ໄດ້: {e}")
         return False
 
 
@@ -166,10 +164,12 @@ def find_model_path():
 
     st.error(
         "ບໍ່ພົບໄຟລ໌ໂມເດວ. "
-        "ກະລຸນາໃສ່ໄຟລ໌ໂມເດວໃຫ້ຖືກບ່ອນ. "
-        "ໄຟລ໌ຕ້ອງຢູ່ໃນໂຟນເດີຫຼັກ ຫຼື ໂຟນເດີໂມເດວ."
+        "ກະລຸນາໃສ່ depression_model_package.pkl "
+        "ໃນ main folder ຫຼື saved_model folder."
     )
-    st.write("ກະລຸນາກວດບ່ອນເກັບໄຟລ໌ໂມເດວອີກຄັ້ງ.")
+    st.write("Checked paths:")
+    for path in MODEL_CANDIDATES:
+        st.code(str(path))
     st.stop()
 
 
@@ -182,7 +182,7 @@ def load_model_package():
 st.markdown(
     """
     <div class="main-title">
-    ແດຊບອດປັນຍາປະດິດ ສຳລັບຄັດກອງຄວາມສ່ຽງຂອງນັກຮຽນ
+    ແດຊບອດ AI ສຳລັບຄັດກອງຄວາມສ່ຽງຂອງນັກຮຽນ
     </div>
     """,
     unsafe_allow_html=True
@@ -220,685 +220,179 @@ risk_lao_map = {
 
 option_lao_map = {
     "low": "ຕ່ຳ",
-    "very low": "ຕ່ຳຫຼາຍ",
     "moderate": "ປານກາງ",
-    "medium": "ປານກາງ",
-    "average": "ປານກາງ",
+    "severe": "ສູງ",
     "high": "ສູງ",
     "very high": "ສູງຫຼາຍ",
-    "severe": "ສູງ",
+    "very_high": "ສູງຫຼາຍ",
     "extreme": "ສູງຫຼາຍ",
+    "medium": "ປານກາງ",
+    "average": "ປານກາງ",
+    "below average": "ຕ່ຳກວ່າປານກາງ",
+    "below_average": "ຕ່ຳກວ່າປານກາງ",
+    "above average": "ສູງກວ່າປານກາງ",
+    "above_average": "ສູງກວ່າປານກາງ",
+    "fair": "ພໍໃຊ້",
     "good": "ດີ",
     "very good": "ດີຫຼາຍ",
-    "excellent": "ດີຫຼາຍ",
-    "fair": "ປານກາງ",
+    "excellent": "ດີເລີດ",
     "poor": "ອ່ອນ",
-    "yes": "ແມ່ນ",
-    "no": "ບໍ່ແມ່ນ",
-    "male": "ຊາຍ",
-    "female": "ຍິງ",
+    "a lot": "ຫຼາຍ",
+    "a little": "ໜ້ອຍ",
+    "none": "ບໍ່ມີ",
     "never": "ບໍ່ເຄີຍ",
     "rarely": "ບໍ່ຄ່ອຍ",
     "sometimes": "ບາງຄັ້ງ",
     "often": "ເລື້ອຍໆ",
     "almost every day": "ເກືອບທຸກມື້",
-    "always": "ສະເໝີ",
-    "none": "ບໍ່ມີ",
+    "male": "ຊາຍ",
+    "female": "ຍິງ",
     "nan": "ບໍ່ລະບຸ",
     "unknown": "ບໍ່ລະບຸ",
     "": "ບໍ່ລະບຸ"
 }
 
-# Exact form labels checked against your Google Form screenshots and your column list.
-# ຂໍ້ຄວາມທີ່ຜູ້ໃຊ້ເຫັນໃຊ້ພາສາລາວແບບງ່າຍ.
-LABEL_MAP = {
-    # ຂໍ້ມູນພື້ນຖານ
-    "Age": "ອາຍຸ",
-    "Gender": "ເພດ",
-    "Province": "ແຂວງທີ່ອາໄສຢູ່",
-    "School level": "ລະດັບຊັ້ນຮຽນ",
-    "Living_with": "ອາໄສຢູ່ກັບໃຜ",
-    "Family_financial_status": "ຖານະການເງິນຂອງຄອບຄົວ",
-
-    # ການຮຽນ
-    "Average grade": "ຄະແນນສະເລ່ຍເທີມນີ້",
-    "Academic performance self": "ຄິດວ່າການຮຽນຂອງຕົນເປັນແນວໃດ",
-    "Focus in class": "ຕັ້ງໃຈຮຽນໃນຫ້ອງໄດ້ງ່າຍປານໃດ",
-    "Academic pressure": "ຄວາມກົດດັນດ້ານການຮຽນ",
-    "Homework pressure": "ຄວາມກົດດັນຈາກວຽກບ້ານ",
-    "Homework pressure3": "ຄວາມກົດດັນຈາກວຽກບ້ານອີກຂໍ້ໜຶ່ງ",
-    "CGPA": "ຄະແນນສະສົມ",
-    "Study satisfaction": "ຄວາມພໍໃຈຕໍ່ການຮຽນ",
-    "Sleep hours day": "ນອນຈັກຊົ່ວໂມງຕໍ່ມື້",
-    "Study hours day": "ຮຽນຈັກຊົ່ວໂມງຕໍ່ມື້",
-
-    # ວິຖີຊີວິດ
-    "Sleep hours night": "ນອນຕອນກາງຄືນຈັກຊົ່ວໂມງ",
-    "Healthy_meals_freq": "ກິນອາຫານດີຕໍ່ສຸຂະພາບເລື້ອຍປານໃດ",
-    "Exercise_freq": "ອອກກຳລັງກາຍເລື້ອຍປານໃດ",
-    "Online_time_daily": "ໃຊ້ເວລາອອນລາຍຕໍ່ມື້ເທົ່າໃດ",
-    "Daytime_tiredness": "ຮູ້ສຶກເມື່ອຍຕອນກາງເວັນເລື້ອຍປານໃດ",
-    "Skip_meals_freq": "ຂ້າມອາຫານເລື້ອຍປານໃດ",
-    "Time_to_relax": "ມີເວລາພັກຜ່ອນຫຼັງເລີກຮຽນບໍ່",
-    "Phone_before_sleep": "ໃຊ້ໂທລະສັບກ່ອນນອນດົນປານໃດ",
-
-    # ສຸຂະພາບຈິດ ແລະ ຄວາມຄຽດ
-    "Stress_level_general": "ຄວາມຄຽດໃນ 7 ມື້ຜ່ານມາ",
-    "Worry or tense freq": "ຮູ້ສຶກກັງວົນ ຫຼື ຕຶງຄຽດເລື້ອຍປານໃດ",
-    "Sad or hopeless freq": "ຮູ້ສຶກເສົ້າ ຫຼື ໝົດຫວັງເລື້ອຍປານໃດ",
-    "Financial stress": "ຄວາມຄຽດເລື່ອງເງິນ",
-    "Depression severity": "ລະດັບອາການເສົ້າໃນໃຈ",
-    "Anxiety severity": "ລະດັບຄວາມກັງວົນ",
-
-    # ຄວາມກັງວົນ
-    "Anx_nervous": "ຮູ້ສຶກກັງວົນ ຫຼື ຢູ່ບໍ່ສະຫງົບ",
-    "Anx_worry_many_things": "ກັງວົນຫຼາຍເລື່ອງ",
-    "Anx_hard_to_relax": "ຜ່ອນຄາຍຍາກ",
-    "Anx_restless": "ຢູ່ນິ່ງຍາກ",
-    "Anx_upset_easily": "ອາລົມເສຍງ່າຍ",
-    "Anx_something_bad": "ຮູ້ສຶກວ່າອາດມີສິ່ງບໍ່ດີເກີດຂຶ້ນ",
-    "Anx_sleep_problem": "ກັງວົນຈົນນອນຍາກ",
-
-    # ອາການເສົ້າໃນໃຈ
-    "Aep_sad_most_days": "ຮູ້ສຶກເສົ້າເກືອບທຸກມື້",
-    "Dep_lose_interest": "ບໍ່ສົນໃຈສິ່ງທີ່ເຄີຍມັກ",
-    "Dep_tired_often": "ຮູ້ສຶກເມື່ອຍເລື້ອຍໆ",
-    "Dep_sleep_problem": "ນອນໜ້ອຍ ຫຼື ຫຼາຍເກີນໄປ",
-    "Dep_feel_failure": "ຮູ້ສຶກວ່າຕົນເອງລົ້ມເຫຼວ",
-    "Dep_cannot_focus": "ຕັ້ງໃຈກັບວຽກຮຽນບໍ່ໄດ້",
-    "Dep_slow_thinking": "ຄິດ ຫຼື ເຄື່ອນໄຫວຊ້າ",
-    "Dep_hopeless": "ຮູ້ສຶກໝົດຫວັງ",
-    "Dep_self_harm_thoughts": "ຄິດທຳຮ້າຍຕົນເອງ",
-
-    # ຄວາມຄຽດ
-    "Stress_schoolwork": "ວຽກຮຽນເຮັດໃຫ້ຄຽດ",
-    "Stress_too_much_manage": "ມີຫຼາຍຢ່າງເກີນໄປທີ່ຕ້ອງຈັດການ",
-    "Stress_daily_tasks": "ວຽກປະຈຳວັນເຮັດໃຫ້ໜັກໃຈ",
-    "Stress_pressure_do_well": "ຮູ້ສຶກກົດດັນໃຫ້ເຮັດໄດ້ດີ",
-    "Stress_hard_balance": "ຈັດເວລາຮຽນ ແລະ ຊີວິດຍາກ",
-
-    # ຄອບຄົວ ແລະ ການຊ່ວຍເຫຼືອ
-    "Family support when stressed": "ຄອບຄົວຊ່ວຍເຫຼືອເມື່ອຄຽດຫຼາຍປານໃດ",
-    "Talk to someone when stressed": "ລົມກັບຄົນອື່ນເມື່ອຄຽດເລື້ອຍປານໃດ",
-    "Support_someone_to_talk": "ມີຄົນໃຫ້ລົມດ້ວຍ",
-    "Support_family": "ຄອບຄົວຊ່ວຍເຫຼືອຂ້ອຍ",
-    "Support_friends": "ໝູ່ເພື່ອນຮັບຟັງຂ້ອຍ",
-    "Support_understood": "ຄົນອື່ນເຂົ້າໃຈຂ້ອຍ",
-    "Support_trust_adult": "ມີຜູ້ໃຫຍ່ 1 ຄົນທີ່ຂ້ອຍໄວ້ໃຈໄດ້",
-
-    # ຄວາມສຸກ ແລະ ກຳລັງໃຈ
-    "Life_happy": "ມີຄວາມສຸກກັບຊີວິດ",
-    "Self_confident": "ຮູ້ສຶກໝັ້ນໃຈ",
-    "Feel_calm": "ຮູ້ສຶກສະຫງົບໃຈ",
-    "Handle_problems": "ຈັດການບັນຫາໄດ້",
-    "Future_hope": "ມີຄວາມຫວັງຕໍ່ອະນາຄົດ",
-}
-
-
-# Column-level choices checked against the Google Form screenshots.
-# The original value is still sent to the model.
-# Only the text shown to the user is cleaned.
-FORM_CHOICE_DISPLAY_MAP = {
-    "Age": {
-        "10 or lower": "10 ປີ ຫຼື ນ້ອຍກວ່າ",
-        "under 10": "ນ້ອຍກວ່າ 10 ປີ",
-        "10-11": "10–11 ປີ",
-        "10–11": "10–11 ປີ",
-        "12-14": "12–14 ປີ",
-        "12–14": "12–14 ປີ",
-        "15-17": "15–17 ປີ",
-        "15–17": "15–17 ປີ",
-        "18": "18 ປີ",
-        "20-25": "20–25 ປີ",
-        "20–25": "20–25 ປີ",
-        "23-25": "23–25 ປີ",
-        "23–25": "23–25 ປີ",
-        "more than 30": "ຫຼາຍກວ່າ 30 ປີ",
-    },
-    "Province": {
-        "phongsaly": "ຜົ້ງສາລີ",
-        "luang namtha": "ຫຼວງນ້ຳທາ",
-        "oudomxay": "ອຸດົມໄຊ",
-        "xiengkhouang": "ຊຽງຂວາງ",
-        "bokeo": "ບໍ່ແກ້ວ",
-        "luang prabang": "ຫຼວງພະບາງ",
-        "huaphan": "ຫົວພັນ",
-        "xayaboury": "ໄຊຍະບູລີ",
-        "sayaboury": "ໄຊຍະບູລີ",
-        "vientiane capital": "ນະຄອນຫຼວງວຽງຈັນ",
-        "vientiane province": "ແຂວງວຽງຈັນ",
-        "borikhamxay": "ບໍລິຄຳໄຊ",
-        "bolikhamxay": "ບໍລິຄຳໄຊ",
-        "khammouane": "ຄຳມ່ວນ",
-        "savannakhet": "ສະຫວັນນະເຂດ",
-        "salavan": "ສາລະວັນ",
-        "saravan": "ສາລະວັນ",
-        "sekong": "ເຊກອງ",
-        "champasak": "ຈຳປາສັກ",
-        "attapeu": "ອັດຕະປື",
-    },
-    "School level": {
-        "m.1": "ມ.1",
-        "m1": "ມ.1",
-        "ມ.1": "ມ.1",
-        "m.2": "ມ.2",
-        "m2": "ມ.2",
-        "ມ.2": "ມ.2",
-        "m.3": "ມ.3",
-        "m3": "ມ.3",
-        "ມ.3": "ມ.3",
-        "m.4": "ມ.4",
-        "m4": "ມ.4",
-        "ມ.4": "ມ.4",
-        "m.5": "ມ.5",
-        "m5": "ມ.5",
-        "ມ.5": "ມ.5",
-        "m.6": "ມ.6",
-        "m6": "ມ.6",
-        "ມ.6": "ມ.6",
-        "m.7": "ມ.7",
-        "m7": "ມ.7",
-        "ມ.7": "ມ.7",
-    },
-    "Gender": {
-        "male": "ຊາຍ",
-        "female": "ຍິງ",
-    },
-    "Average grade": {
-        "80-100": "80–100 ຄະແນນ: ສູງ",
-        "80–100": "80–100 ຄະແນນ: ສູງ",
-        "60-79": "60–79 ຄະແນນ: ດີ",
-        "60–79": "60–79 ຄະແນນ: ດີ",
-        "40-59": "40–59 ຄະແນນ: ປານກາງ",
-        "40–59": "40–59 ຄະແນນ: ປານກາງ",
-        "below 40": "ຕ່ຳກວ່າ 40 ຄະແນນ",
-    },
-    "Academic performance self": {
-        "very good": "ດີຫຼາຍ",
-        "good": "ດີ",
-        "average": "ປານກາງ",
-        "below average": "ຕ່ຳກວ່າປານກາງ",
-        "poor": "ອ່ອນ",
-    },
-    "Living_with": {
-        "both parents": "ຢູ່ກັບພໍ່ແມ່ທັງສອງ",
-        "one parent": "ຢູ່ກັບພໍ່ ຫຼື ແມ່ຄົນດຽວ",
-        "relatives": "ຢູ່ກັບຍາດພີ່ນ້ອງ",
-        "live alone": "ຢູ່ຄົນດຽວ",
-    },
-    "Family_financial_status": {
-        "good": "ດີ",
-        "fair": "ພໍໃຊ້",
-        "poor": "ອ່ອນ",
-        "very poor": "ອ່ອນຫຼາຍ",
-    },
-    "Sleep hours night": {
-        "less than 5 hours": "ນ້ອຍກວ່າ 5 ຊົ່ວໂມງ",
-        "5-6 hours": "5–6 ຊົ່ວໂມງ",
-        "5–6 hours": "5–6 ຊົ່ວໂມງ",
-        "7-8 hours": "7–8 ຊົ່ວໂມງ",
-        "7–8 hours": "7–8 ຊົ່ວໂມງ",
-        "more than 8 hours": "ຫຼາຍກວ່າ 8 ຊົ່ວໂມງ",
-    },
-    "Healthy_meals_freq": {
-        "every day": "ທຸກມື້",
-        "3-5 days/week": "3–5 ມື້ຕໍ່ອາທິດ",
-        "3–5 days/week": "3–5 ມື້ຕໍ່ອາທິດ",
-        "1-2 days/week": "1–2 ມື້ຕໍ່ອາທິດ",
-        "1–2 days/week": "1–2 ມື້ຕໍ່ອາທິດ",
-        "rarely": "ບໍ່ຄ່ອຍ",
-    },
-    "Exercise_freq": {
-        "every day": "ທຸກມື້",
-        "3-5 days/week": "3–5 ມື້ຕໍ່ອາທິດ",
-        "3–5 days/week": "3–5 ມື້ຕໍ່ອາທິດ",
-        "1-2 days/week": "1–2 ມື້ຕໍ່ອາທິດ",
-        "1–2 days/week": "1–2 ມື້ຕໍ່ອາທິດ",
-        "never": "ບໍ່ເຄີຍ",
-    },
-    "Online_time_daily": {
-        "less than 1 hour": "ນ້ອຍກວ່າ 1 ຊົ່ວໂມງ",
-        "1-3 hours": "1–3 ຊົ່ວໂມງ",
-        "1–3 hours": "1–3 ຊົ່ວໂມງ",
-        "4-6 hours": "4–6 ຊົ່ວໂມງ",
-        "4–6 hours": "4–6 ຊົ່ວໂມງ",
-        "more than 6 hours": "ຫຼາຍກວ່າ 6 ຊົ່ວໂມງ",
-    },
-    "Daytime_tiredness": {
-        "never": "ບໍ່ເຄີຍ",
-        "sometimes": "ບາງຄັ້ງ",
-        "often": "ເລື້ອຍໆ",
-        "almost every day": "ເກືອບທຸກມື້",
-    },
-    "Skip_meals_freq": {
-        "never": "ບໍ່ເຄີຍ",
-        "once a week": "1 ຄັ້ງຕໍ່ອາທິດ",
-        "2-3 times/week": "2–3 ຄັ້ງຕໍ່ອາທິດ",
-        "2–3 times/week": "2–3 ຄັ້ງຕໍ່ອາທິດ",
-        "most days": "ເກືອບທຸກມື້",
-    },
-    "Time_to_relax": {
-        "yes, every day": "ມີ ທຸກມື້",
-        "a few days/week": "ມີ ບາງມື້ຕໍ່ອາທິດ",
-        "rarely": "ບໍ່ຄ່ອຍມີ",
-        "never": "ບໍ່ມີເລີຍ",
-    },
-    "Phone_before_sleep": {
-        "never": "ບໍ່ເຄີຍ",
-        "less than 30 minutes": "ນ້ອຍກວ່າ 30 ນາທີ",
-        "30-60 minutes": "30–60 ນາທີ",
-        "30–60 minutes": "30–60 ນາທີ",
-        "more than 1 hour": "ຫຼາຍກວ່າ 1 ຊົ່ວໂມງ",
-    },
-    "Focus in class": {
-        "very easy": "ງ່າຍຫຼາຍ",
-        "easy": "ງ່າຍ",
-        "hard": "ຍາກ",
-        "very hard": "ຍາກຫຼາຍ",
-    },
-    "Worry or tense freq": {
-        "never": "ບໍ່ເຄີຍ",
-        "sometimes": "ບາງຄັ້ງ",
-        "often": "ເລື້ອຍໆ",
-        "almost every day": "ເກືອບທຸກມື້",
-    },
-    "Sad or hopeless freq": {
-        "never": "ບໍ່ເຄີຍ",
-        "sometimes": "ບາງຄັ້ງ",
-        "often": "ເລື້ອຍໆ",
-        "almost every day": "ເກືອບທຸກມື້",
-    },
-    "Family support when stressed": {
-        "a lot": "ຫຼາຍ",
-        "some": "ພໍມີ",
-        "little": "ໜ້ອຍ",
-        "none": "ບໍ່ມີ",
-    },
-    "Talk to someone when stressed": {
-        "always": "ສະເໝີ",
-        "sometimes": "ບາງຄັ້ງ",
-        "rarely": "ບໍ່ຄ່ອຍ",
-        "never": "ບໍ່ເຄີຍ",
-    },
-    "CGPA": {
-        "0-5": "0–5: ຕ່ຳ",
-        "0–5": "0–5: ຕ່ຳ",
-        "5-7": "5–7: ປານກາງ",
-        "5–7": "5–7: ປານກາງ",
-        "7-8": "7–8: ສູງ",
-        "7–8": "7–8: ສູງ",
-        "8-10": "8–10: ສູງຫຼາຍ",
-        "8–10": "8–10: ສູງຫຼາຍ",
-    },
-    "Study satisfaction": {
-        "very low": "ຕ່ຳຫຼາຍ",
-        "low": "ຕ່ຳ",
-        "moderate": "ປານກາງ",
-        "high": "ສູງ",
-        "very high": "ສູງຫຼາຍ",
-    },
-}
-
-# Five form groups requested by the user.
-# The order now follows the survey screenshots more closely.
-SECTION_GROUPS = {
-    "1. ຂໍ້ມູນດ້ານການຮຽນ": [
-        "Average grade", "Academic performance self", "Focus in class",
-        "Academic pressure", "Homework pressure", "Homework pressure3",
-        "CGPA", "Study satisfaction", "Sleep hours day", "Study hours day"
-    ],
-    "2. ສຸຂະພາບຈິດ ແລະ ຄວາມຄຽດ": [
-        "Stress_level_general", "Worry or tense freq", "Sad or hopeless freq",
-        "Financial stress", "Depression severity", "Anxiety severity",
-        "Anx_nervous", "Anx_worry_many_things", "Anx_hard_to_relax",
-        "Anx_restless", "Anx_upset_easily", "Anx_something_bad", "Anx_sleep_problem",
-        "Aep_sad_most_days", "Dep_lose_interest", "Dep_tired_often", "Dep_sleep_problem",
-        "Dep_feel_failure", "Dep_cannot_focus", "Dep_slow_thinking", "Dep_hopeless",
-        "Dep_self_harm_thoughts", "Stress_schoolwork", "Stress_too_much_manage",
-        "Stress_daily_tasks", "Stress_pressure_do_well", "Stress_hard_balance",
-        "Life_happy", "Self_confident", "Feel_calm", "Handle_problems", "Future_hope"
-    ],
-    "3. ຄອບຄົວ ແລະ ການຊ່ວຍເຫຼືອ": [
-        "Family support when stressed", "Talk to someone when stressed",
-        "Support_someone_to_talk", "Support_family", "Support_friends",
-        "Support_understood", "Support_trust_adult"
-    ],
-    "4. ວິຖີຊີວິດ": [
-        "Sleep hours night", "Healthy_meals_freq", "Exercise_freq", "Online_time_daily",
-        "Daytime_tiredness", "Skip_meals_freq", "Time_to_relax", "Phone_before_sleep"
-    ],
-    "5. ຂໍ້ມູນອື່ນໆ": [
-        "Age", "Gender", "Province", "School level", "Living_with", "Family_financial_status"
-    ]
-}
-
-SECTION_ORDER = [
-    "1. ຂໍ້ມູນດ້ານການຮຽນ",
-    "2. ສຸຂະພາບຈິດ ແລະ ຄວາມຄຽດ",
-    "3. ຄອບຄົວ ແລະ ການຊ່ວຍເຫຼືອ",
-    "4. ວິຖີຊີວິດ",
-    "5. ຂໍ້ມູນອື່ນໆ"
-]
 
 def normalize_text(value):
-    return str(value).strip().lower().replace("_", " ").replace("-", " ").replace("–", " ")
+    return str(value).strip().lower().replace("_", " ").replace("-", " ")
 
 
-def normalize_col_key(value):
-    text = str(value).strip().lower()
-    text = text.replace("_", " ").replace("-", " ").replace("–", " ")
-    text = " ".join(text.split())
-    return text
-
-
-# Extra aliases for names that may be saved differently inside the model package.
-COLUMN_ALIAS_MAP = {
-    "age": "Age",
-    "gender": "Gender",
-    "province": "Province",
-    "school level": "School level",
-    "average grade": "Average grade",
-    "academic performance self": "Academic performance self",
-    "living with": "Living_with",
-    "family financial status": "Family_financial_status",
-    "sleep hours night": "Sleep hours night",
-    "healthy meals freq": "Healthy_meals_freq",
-    "exercise freq": "Exercise_freq",
-    "online time daily": "Online_time_daily",
-    "stress level general": "Stress_level_general",
-    "daytime tiredness": "Daytime_tiredness",
-    "skip meals freq": "Skip_meals_freq",
-    "time to relax": "Time_to_relax",
-    "phone before sleep": "Phone_before_sleep",
-    "focus in class": "Focus in class",
-    "worry or tense freq": "Worry or tense freq",
-    "sad or hopeless freq": "Sad or hopeless freq",
-    "family support when stressed": "Family support when stressed",
-    "talk to someone when stressed": "Talk to someone when stressed",
-    "academic pressure": "Academic pressure",
-    "homework pressure": "Homework pressure",
-    "homework pressure3": "Homework pressure3",
-    "cgpa": "CGPA",
-    "study satisfaction": "Study satisfaction",
-    "sleep hours day": "Sleep hours day",
-    "study hours day": "Study hours day",
-    "financial stress": "Financial stress",
-    "depression severity": "Depression severity",
-    "anxiety severity": "Anxiety severity",
-    "anx nervous": "Anx_nervous",
-    "anx worry many things": "Anx_worry_many_things",
-    "anx hard to relax": "Anx_hard_to_relax",
-    "anx restless": "Anx_restless",
-    "anx upset easily": "Anx_upset_easily",
-    "anx something bad": "Anx_something_bad",
-    "anx sleep problem": "Anx_sleep_problem",
-    "aep sad most days": "Aep_sad_most_days",
-    "dep lose interest": "Dep_lose_interest",
-    "dep tired often": "Dep_tired_often",
-    "dep sleep problem": "Dep_sleep_problem",
-    "dep feel failure": "Dep_feel_failure",
-    "dep cannot focus": "Dep_cannot_focus",
-    "dep slow thinking": "Dep_slow_thinking",
-    "dep hopeless": "Dep_hopeless",
-    "dep self harm thoughts": "Dep_self_harm_thoughts",
-    "stress schoolwork": "Stress_schoolwork",
-    "stress too much manage": "Stress_too_much_manage",
-    "stress daily tasks": "Stress_daily_tasks",
-    "stress pressure do well": "Stress_pressure_do_well",
-    "stress hard balance": "Stress_hard_balance",
-    "support someone to talk": "Support_someone_to_talk",
-    "support family": "Support_family",
-    "support friends": "Support_friends",
-    "support understood": "Support_understood",
-    "support trust adult": "Support_trust_adult",
-    "life happy": "Life_happy",
-    "self confident": "Self_confident",
-    "feel calm": "Feel_calm",
-    "handle problems": "Handle_problems",
-    "future hope": "Future_hope",
-}
-
-
-# If a model saved values as Option 1, Option 2, etc., show the real Lao choice.
-ORDINAL_CHOICE_DISPLAY_MAP = {
-    "Age": [
-        "10 ປີ ຫຼື ນ້ອຍກວ່າ", "10–11 ປີ", "12–14 ປີ", "15–17 ປີ",
-        "18–20 ປີ", "20–23 ປີ", "23–25 ປີ", "ຫຼາຍກວ່າ 30 ປີ"
-    ],
-    "Gender": ["ຊາຍ", "ຍິງ"],
-    "School level": ["ມ.1", "ມ.2", "ມ.3", "ມ.4", "ມ.5", "ມ.6", "ມ.7"],
-    "Province": [
-        "ຜົ້ງສາລີ", "ຫຼວງນ້ຳທາ", "ອຸດົມໄຊ", "ຊຽງຂວາງ", "ບໍ່ແກ້ວ",
-        "ຫຼວງພະບາງ", "ຫົວພັນ", "ໄຊຍະບູລີ", "ນະຄອນຫຼວງວຽງຈັນ",
-        "ແຂວງວຽງຈັນ", "ບໍລິຄຳໄຊ", "ຄຳມ່ວນ", "ສະຫວັນນະເຂດ",
-        "ສາລະວັນ", "ເຊກອງ", "ຈຳປາສັກ", "ອັດຕະປື"
-    ],
-    "Average grade": ["80–100 ຄະແນນ: ສູງ", "60–79 ຄະແນນ: ດີ", "40–59 ຄະແນນ: ປານກາງ", "ຕ່ຳກວ່າ 40 ຄະແນນ"],
-    "Academic performance self": ["ດີຫຼາຍ", "ດີ", "ປານກາງ", "ຕ່ຳກວ່າປານກາງ", "ອ່ອນ"],
-    "Living_with": ["ຢູ່ກັບພໍ່ແມ່ທັງສອງ", "ຢູ່ກັບພໍ່ ຫຼື ແມ່ຄົນດຽວ", "ຢູ່ກັບຍາດພີ່ນ້ອງ", "ຢູ່ຄົນດຽວ"],
-    "Family_financial_status": ["ດີ", "ພໍໃຊ້", "ອ່ອນ", "ອ່ອນຫຼາຍ"],
-    "Sleep hours night": ["ນ້ອຍກວ່າ 5 ຊົ່ວໂມງ", "5–6 ຊົ່ວໂມງ", "7–8 ຊົ່ວໂມງ", "ຫຼາຍກວ່າ 8 ຊົ່ວໂມງ"],
-    "Healthy_meals_freq": ["ທຸກມື້", "3–5 ມື້ຕໍ່ອາທິດ", "1–2 ມື້ຕໍ່ອາທິດ", "ບໍ່ຄ່ອຍ"],
-    "Exercise_freq": ["ທຸກມື້", "3–5 ມື້ຕໍ່ອາທິດ", "1–2 ມື້ຕໍ່ອາທິດ", "ບໍ່ເຄີຍ"],
-    "Online_time_daily": ["ນ້ອຍກວ່າ 1 ຊົ່ວໂມງ", "1–3 ຊົ່ວໂມງ", "4–6 ຊົ່ວໂມງ", "ຫຼາຍກວ່າ 6 ຊົ່ວໂມງ"],
-    "Stress_level_general": ["ຕ່ຳ", "ປານກາງ", "ສູງ", "ສູງຫຼາຍ"],
-    "Daytime_tiredness": ["ບໍ່ເຄີຍ", "ບາງຄັ້ງ", "ເລື້ອຍໆ", "ເກືອບທຸກມື້"],
-    "Skip_meals_freq": ["ບໍ່ເຄີຍ", "1 ຄັ້ງຕໍ່ອາທິດ", "2–3 ຄັ້ງຕໍ່ອາທິດ", "ເກືອບທຸກມື້"],
-    "Time_to_relax": ["ມີ ທຸກມື້", "ມີ ບາງມື້ຕໍ່ອາທິດ", "ບໍ່ຄ່ອຍມີ", "ບໍ່ມີເລີຍ"],
-    "Phone_before_sleep": ["ບໍ່ເຄີຍ", "ນ້ອຍກວ່າ 30 ນາທີ", "30–60 ນາທີ", "ຫຼາຍກວ່າ 1 ຊົ່ວໂມງ"],
-    "Focus in class": ["ງ່າຍຫຼາຍ", "ງ່າຍ", "ຍາກ", "ຍາກຫຼາຍ"],
-    "Worry or tense freq": ["ບໍ່ເຄີຍ", "ບາງຄັ້ງ", "ເລື້ອຍໆ", "ເກືອບທຸກມື້"],
-    "Sad or hopeless freq": ["ບໍ່ເຄີຍ", "ບາງຄັ້ງ", "ເລື້ອຍໆ", "ເກືອບທຸກມື້"],
-    "Family support when stressed": ["ຫຼາຍ", "ພໍມີ", "ໜ້ອຍ", "ບໍ່ມີ"],
-    "Talk to someone when stressed": ["ສະເໝີ", "ບາງຄັ້ງ", "ບໍ່ຄ່ອຍ", "ບໍ່ເຄີຍ"],
-    "Academic pressure": ["ຕ່ຳຫຼາຍ", "ຕ່ຳ", "ປານກາງ", "ສູງ", "ສູງຫຼາຍ"],
-    "Homework pressure": ["ບໍ່ມີ", "ຕ່ຳ", "ປານກາງ", "ສູງ", "ສູງຫຼາຍ"],
-    "Homework pressure3": ["ບໍ່ມີ", "ຕ່ຳ", "ປານກາງ", "ສູງ", "ສູງຫຼາຍ"],
-    "CGPA": ["0–5: ຕ່ຳ", "5–7: ປານກາງ", "7–8: ສູງ", "8–10: ສູງຫຼາຍ"],
-    "Study satisfaction": ["ຕ່ຳຫຼາຍ", "ຕ່ຳ", "ປານກາງ", "ສູງ", "ສູງຫຼາຍ"],
-    "Sleep hours day": ["0–5 ຊົ່ວໂມງ", "6–8 ຊົ່ວໂມງ", "7–9 ຊົ່ວໂມງ"],
-    "Study hours day": ["0–3 ຊົ່ວໂມງ", "4–6 ຊົ່ວໂມງ", "7–9 ຊົ່ວໂມງ", "10 ຊົ່ວໂມງຂຶ້ນໄປ"],
-    "Depression severity": ["ຕ່ຳ", "ປານກາງ", "ສູງ", "ສູງຫຼາຍ", "ຮຸນແຮງຫຼາຍ"],
-    "Anxiety severity": ["ຕ່ຳ", "ປານກາງ", "ສູງ", "ສູງຫຼາຍ", "ຮຸນແຮງຫຼາຍ"],
-}
-
-# The same 1–5 scale is used for these mental, stress, support, and well-being items.
-LIKERT_1_TO_5_COLS = [
-    "Anx_nervous", "Anx_worry_many_things", "Anx_hard_to_relax", "Anx_restless",
-    "Anx_upset_easily", "Anx_something_bad", "Anx_sleep_problem", "Aep_sad_most_days",
-    "Dep_lose_interest", "Dep_tired_often", "Dep_sleep_problem", "Dep_feel_failure",
-    "Dep_cannot_focus", "Dep_slow_thinking", "Dep_hopeless", "Dep_self_harm_thoughts",
-    "Stress_schoolwork", "Stress_too_much_manage", "Stress_daily_tasks",
-    "Stress_pressure_do_well", "Stress_hard_balance", "Support_someone_to_talk",
-    "Support_family", "Support_friends", "Support_understood", "Support_trust_adult",
-    "Life_happy", "Self_confident", "Feel_calm", "Handle_problems", "Future_hope"
-]
-for _col in LIKERT_1_TO_5_COLS:
-    ORDINAL_CHOICE_DISPLAY_MAP.setdefault(_col, ["1", "2", "3", "4", "5"])
-
-
-def get_canonical_column(col):
-    col_text = str(col).strip()
-    if col_text in LABEL_MAP:
-        return col_text
-
-    norm = normalize_col_key(col_text)
-    if norm in COLUMN_ALIAS_MAP:
-        return COLUMN_ALIAS_MAP[norm]
-
-    for known_col in LABEL_MAP:
-        if normalize_col_key(known_col) == norm:
-            return known_col
-
-    return col_text
-
-
-def option_number(value):
-    import re
-    text = str(value).strip().lower()
-    patterns = [
-        r"option\s*(\d+)",
-        r"ຕົວເລືອກ\s*(\d+)",
-        r"^([a-h])\s*[\.|\)]",
-    ]
-
-    for pattern in patterns:
-        match = re.search(pattern, text)
-        if match:
-            raw = match.group(1)
-            if raw.isdigit():
-                return int(raw)
-            return ord(raw) - ord("a") + 1
-
-    return None
-
-
-def display_option(value, col=None):
+def display_option(value):
     if value is None:
         return "ບໍ່ລະບຸ"
 
     value_text = str(value).strip()
     key = normalize_text(value_text)
-    canonical_col = get_canonical_column(col) if col else col
-
-    # Use real choice order if the saved value is Option 1, Option 2, etc.
-    num = option_number(value_text)
-    if canonical_col in ORDINAL_CHOICE_DISPLAY_MAP and num:
-        choices = ORDINAL_CHOICE_DISPLAY_MAP[canonical_col]
-        if 1 <= num <= len(choices):
-            return choices[num - 1]
-
-    # First use column-specific choices from the real Google Form.
-    if canonical_col in FORM_CHOICE_DISPLAY_MAP:
-        for raw_key, shown_text in FORM_CHOICE_DISPLAY_MAP[canonical_col].items():
-            if normalize_text(raw_key) == key:
-                return shown_text
-            if normalize_text(raw_key) in key:
-                return shown_text
 
     if key in option_lao_map:
         return option_lao_map[key]
 
-    # If the model has a number as text, keep it simple.
     if value_text.replace(".", "", 1).isdigit():
         return value_text
 
-    # Do not create fake choices. Show the saved text only when no safe match exists.
-    return value_text
+    if "very" in key and "high" in key:
+        return "ສູງຫຼາຍ"
+    if "below" in key and "average" in key:
+        return "ຕ່ຳກວ່າປານກາງ"
+    if "above" in key and "average" in key:
+        return "ສູງກວ່າປານກາງ"
 
-
-def slider_help_text(col):
-    col_low = str(col).lower()
-
-    if any(k in col_low for k in ["anx", "depress", "dep_", "stress", "hopeless", "self_harm", "worry", "sad"]):
-        return "1 = ນ້ອຍຫຼາຍ, 5 = ຫຼາຍຫຼາຍ"
-
-    if any(k in col_low for k in ["support", "happy", "confident", "calm", "handle", "future"]):
-        return "1 = ໜ້ອຍຫຼາຍ, 5 = ດີຫຼາຍ"
-
-    return "1 = ຕ່ຳຫຼາຍ, 5 = ສູງຫຼາຍ"
-
-
-def infer_lao_label(col):
-    text = normalize_col_key(col)
-
-    if "age" in text:
-        return "ອາຍຸ"
-    if "gender" in text or "sex" in text:
-        return "ເພດ"
-    if "province" in text or "district" in text or "village" in text:
-        return "ບ່ອນຢູ່"
-    if "school level" in text or "grade level" in text or "class" in text:
-        return "ລະດັບຊັ້ນຮຽນ"
-    if "average grade" in text or "grade" in text or "cgpa" in text or "score" in text:
-        return "ຄະແນນການຮຽນ"
-    if "academic performance" in text:
-        return "ການຮຽນຂອງຕົນ"
-    if "living" in text or "live" in text:
-        return "ອາໄສຢູ່ກັບໃຜ"
-    if "family financial" in text or "financial status" in text:
-        return "ຖານະການເງິນຂອງຄອບຄົວ"
-    if "sleep" in text:
-        return "ການນອນ"
-    if "meal" in text or "food" in text:
-        return "ການກິນອາຫານ"
-    if "exercise" in text:
-        return "ການອອກກຳລັງກາຍ"
-    if "online" in text or "phone" in text or "screen" in text:
-        return "ການໃຊ້ໂທລະສັບ ຫຼື ອອນລາຍ"
-    if "focus" in text:
-        return "ການຕັ້ງໃຈຮຽນ"
-    if "worry" in text or "anx" in text or "tense" in text:
-        return "ຄວາມກັງວົນ"
-    if "sad" in text or "hopeless" in text or "depress" in text or "dep" in text:
-        return "ຄວາມເສົ້າໃນໃຈ"
-    if "stress" in text or "pressure" in text:
-        return "ຄວາມຄຽດ"
-    if "homework" in text:
-        return "ວຽກບ້ານ"
-    if "study" in text:
-        return "ການຮຽນ"
-    if "support" in text or "friend" in text or "adult" in text or "talk" in text:
-        return "ການຊ່ວຍເຫຼືອ"
-    if "happy" in text:
-        return "ຄວາມສຸກ"
-    if "confident" in text:
-        return "ຄວາມໝັ້ນໃຈ"
-    if "calm" in text:
-        return "ຄວາມສະຫງົບໃຈ"
-    if "future" in text or "hope" in text:
-        return "ຄວາມຫວັງຕໍ່ອະນາຄົດ"
-
-    return "ຂໍ້ມູນອື່ນໆ"
+    return "ຕົວເລືອກອື່ນ"
 
 
 def display_label(col):
-    canonical_col = get_canonical_column(col)
+    col_text = str(col).strip()
+    col_low = col_text.lower()
 
-    if canonical_col in LABEL_MAP:
-        return LABEL_MAP[canonical_col]
+    label_map = {
+        "Academic performance self": "ການປະເມີນຜົນການຮຽນຂອງຕົນເອງ",
+        "Academic pressure": "ຄວາມກົດດັນດ້ານການຮຽນ",
+        "Average grade": "ຜົນການຮຽນໂດຍສະເລ່ຍ",
+        "Homework pressure": "ຄວາມກົດດັນຈາກວຽກບ້ານ",
+        "Homework pressure3": "ຄວາມກົດດັນຈາກວຽກບ້ານ",
+        "School level": "ລະດັບຊັ້ນຮຽນ",
+        "Stress_schoolwork": "ຄວາມຄຽດຈາກການຮຽນ",
+        "Study hours day": "ຊົ່ວໂມງຮຽນຕໍ່ມື້",
+        "Study satisfaction": "ຄວາມພໍໃຈຕໍ່ການຮຽນ",
 
-    # Try to infer the real meaning for any new column.
-    return infer_lao_label(col)
+        "Aep_sad_most_days": "ຮູ້ສຶກເສົ້າເກືອບທຸກມື້",
+        "Anx_hard_to_relax": "ຜ່ອນຄາຍຍາກ",
+        "Anx_nervous": "ຮູ້ສຶກກັງວົນ",
+        "Anx_restless": "ຮູ້ສຶກຢູ່ບໍ່ນິ່ງ",
+        "Anx_sleep_problem": "ມີບັນຫາການນອນ",
+        "Anx_something_bad": "ກັງວົນວ່າຈະເກີດສິ່ງບໍ່ດີ",
+        "Anx_upset_easily": "ອາລົມເສຍງ່າຍ",
+        "Anx_worry_many_things": "ກັງວົນຫຼາຍເລື່ອງ",
+        "Anxiety severity": "ລະດັບຄວາມກັງວົນ",
+        "Dep_hopeless": "ຮູ້ສຶກໝົດຫວັງ",
+        "Dep_self_harm_thoughts": "ຄວາມຄິດທຳຮ້າຍຕົນເອງ",
+        "Dep_tired_often": "ຮູ້ສຶກເມື່ອຍເລື້ອຍໆ",
+        "Dep_lose_interest": "ບໍ່ສົນໃຈສິ່ງທີ່ເຄີຍມັກ",
+        "Sad or hopeless freq": "ຄວາມຖີ່ຂອງອາການເສົ້າ ຫຼື ໝົດຫວັງ",
+        "Stress_daily_tasks": "ຄວາມຄຽດຈາກວຽກປະຈຳວັນ",
+        "Stress_pressure_do_well": "ຄວາມກົດດັນໃຫ້ເຮັດໄດ້ດີ",
+        "Stress_level_general": "ລະດັບຄວາມຄຽດໂດຍລວມ",
+        "Worry or tense freq": "ຄວາມຖີ່ຂອງຄວາມກັງວົນ",
 
+        "Family support when stressed": "ການຊ່ວຍເຫຼືອຈາກຄອບຄົວເມື່ອຄຽດ",
+        "Family support": "ການຊ່ວຍເຫຼືອຈາກຄອບຄົວ",
+        "Friend support": "ການຊ່ວຍເຫຼືອຈາກໝູ່",
+        "Social support": "ການຊ່ວຍເຫຼືອທາງສັງຄົມ",
+        "Parent support": "ການຊ່ວຍເຫຼືອຈາກພໍ່ແມ່",
 
-def build_section_columns(all_columns):
-    available = list(all_columns)
-    used = set()
-    sections = []
+        "Financial stress": "ຄວາມຄຽດດ້ານການເງິນ",
+        "Feel_calm": "ຮູ້ສຶກສະຫງົບໃຈ",
+        "Life_happy": "ຄວາມສຸກໃນຊີວິດ",
+        "Sleep hours": "ຊົ່ວໂມງນອນ",
+        "Exercise": "ການອອກກຳລັງກາຍ",
+        "Phone use": "ການໃຊ້ໂທລະສັບ",
+        "Online time": "ເວລາຢູ່ອອນລາຍ",
 
-    for section_title in SECTION_ORDER:
-        cols = []
-        wanted = SECTION_GROUPS[section_title]
+        "Age": "ອາຍຸ",
+        "Gender": "ເພດ"
+    }
 
-        for target_col in wanted:
-            for actual_col in available:
-                if actual_col in used:
-                    continue
-                if get_canonical_column(actual_col) == target_col:
-                    cols.append(actual_col)
-                    used.add(actual_col)
-                    break
+    if col_text in label_map:
+        return label_map[col_text]
 
-        # Put any future unknown columns into Section 5.
-        if section_title == "5. ຂໍ້ມູນອື່ນໆ":
-            extra_cols = [c for c in available if c not in used]
-            cols.extend(extra_cols)
-            used.update(extra_cols)
+    if "academic" in col_low:
+        return "ການຮຽນ"
+    if "grade" in col_low:
+        return "ຜົນການຮຽນ"
+    if "homework" in col_low:
+        return "ວຽກບ້ານ"
+    if "schoolwork" in col_low:
+        return "ວຽກຮຽນ"
+    if "school" in col_low:
+        return "ໂຮງຮຽນ"
+    if "study" in col_low:
+        return "ການຮຽນ"
+    if "anx" in col_low or "worry" in col_low or "nervous" in col_low:
+        return "ຄວາມກັງວົນ"
+    if "sad" in col_low:
+        return "ຄວາມເສົ້າ"
+    if "hopeless" in col_low:
+        return "ຄວາມໝົດຫວັງ"
+    if "depress" in col_low or "dep" in col_low:
+        return "ອາການຊຶມເສົ້າ"
+    if "stress" in col_low:
+        return "ຄວາມຄຽດ"
+    if "pressure" in col_low:
+        return "ຄວາມກົດດັນ"
+    if "sleep" in col_low:
+        return "ການນອນ"
+    if "family" in col_low:
+        return "ຄອບຄົວ"
+    if "parent" in col_low:
+        return "ພໍ່ແມ່"
+    if "friend" in col_low:
+        return "ໝູ່ເພື່ອນ"
+    if "social" in col_low or "support" in col_low:
+        return "ການຊ່ວຍເຫຼືອ"
+    if "financial" in col_low or "money" in col_low:
+        return "ການເງິນ"
+    if "phone" in col_low:
+        return "ການໃຊ້ໂທລະສັບ"
+    if "online" in col_low:
+        return "ການໃຊ້ອິນເຕີເນັດ"
+    if "happy" in col_low:
+        return "ຄວາມສຸກ"
+    if "calm" in col_low:
+        return "ຄວາມສະຫງົບໃຈ"
+    if "age" in col_low:
+        return "ອາຍຸ"
+    if "gender" in col_low:
+        return "ເພດ"
 
-        if cols:
-            sections.append((section_title, cols))
-
-    return sections
+    return "ຄຳຖາມທົ່ວໄປ"
 
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🏠 ໜ້າຫຼັກ")
+st.sidebar.title("🏠 Home")
 st.sidebar.caption("ເມນູ")
-st.sidebar.caption(APP_VERSION)
 
 page = st.sidebar.radio(
     "ເລືອກໜ້າ",
@@ -919,7 +413,7 @@ if page == "ໜ້າຫຼັກ":
     st.header("ພາບລວມຂອງແດຊບອດ")
 
     st.info(
-        "ແດຊບອດນີ້ໃຊ້ໂມເດວປັນຍາປະດິດທີ່ຝຶກແລ້ວ. "
+        "ແດຊບອດນີ້ໄດ້ເຊື່ອມກັບໂມເດວ AI ທີ່ຝຶກແລ້ວ. "
         "ລະບົບຈະຊ່ວຍຄັດກອງຄວາມສ່ຽງ ແລະ ແຈ້ງທີ່ປຶກສາເມື່ອຜົນຢູ່ໃນລະດັບທີ່ຄວນຕິດຕາມ."
     )
 
@@ -927,7 +421,7 @@ if page == "ໜ້າຫຼັກ":
 
     col1.metric("ຄວາມແມ່ນຍຳໃນຊຸດທົດສອບ", "92.81%")
     col2.metric("ຄວາມແມ່ນຍຳແບບສົມດຸນ", "96.99%")
-    col3.metric("ຄະແນນລວມ", "96.28%")
+    col3.metric("ຄະແນນ F1 ໂດຍລວມ", "96.28%")
 
     st.subheader("ໂມເດວທີ່ກຳລັງໃຊ້")
     st.success("ໂມເດວຖືກໂຫຼດສຳເລັດແລ້ວ")
@@ -936,7 +430,7 @@ if page == "ໜ້າຫຼັກ":
         "ຕົວຊີ້ວັດ": [
             "ຄວາມແມ່ນຍຳໃນຊຸດທົດສອບ",
             "ຄວາມແມ່ນຍຳແບບສົມດຸນ",
-            "ຄະແນນລວມ"
+            "ຄະແນນ F1 ໂດຍລວມ"
         ],
         "ຄະແນນ": [92.81, 96.99, 96.28]
     })
@@ -965,7 +459,7 @@ elif page == "ຜົນຂອງໂມເດວ":
         "ລະດັບຄວາມສ່ຽງ": ["ຕ່ຳ", "ປານກາງ", "ສູງ"],
         "ຄວາມແມ່ນຍຳເມື່ອທຳນາຍ": [0.95, 0.94, 0.97],
         "ການກວດພົບໄດ້ຖືກ": [0.96, 0.93, 0.98],
-        "ຄະແນນລວມ": [0.95, 0.94, 0.97]
+        "ຄະແນນ F1": [0.95, 0.94, 0.97]
     }
 
     st.dataframe(
@@ -993,9 +487,8 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
     st.header("ທຳນາຍຄວາມສ່ຽງຂອງນັກຮຽນ")
 
     st.info(
-        "ກະລຸນາຕອບຕາມຄວາມຈິງ. "
-        "ຄຳຕອບບໍ່ມີຖືກ ຫຼື ຜິດ. "
-        "ເລກ 1 ແມ່ນນ້ອຍຫຼາຍ. ເລກ 5 ແມ່ນຫຼາຍຫຼາຍ."
+        "ກະລຸນາຕອບຄຳຖາມຂ້າງລຸ່ມ. "
+        "ຄ່າ 1 ໝາຍເຖິງຕ່ຳຫຼາຍ ແລະ ຄ່າ 5 ໝາຍເຖິງສູງຫຼາຍ."
     )
 
     user_input = {}
@@ -1010,7 +503,29 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
     except Exception:
         cat_options = {}
 
-    section_columns = build_section_columns(common_cols)
+    academic_cols = []
+    mental_cols = []
+    support_cols = []
+    lifestyle_cols = []
+    other_cols = []
+
+    for col in common_cols:
+        col_low = col.lower()
+
+        if any(k in col_low for k in ["academic", "school", "study", "grade", "exam", "homework", "schoolwork"]):
+            academic_cols.append(col)
+
+        elif any(k in col_low for k in ["family", "friend", "social", "support", "parent", "home"]):
+            support_cols.append(col)
+
+        elif any(k in col_low for k in ["sleep", "exercise", "phone", "online", "relax", "tired", "happy", "calm", "financial", "money"]):
+            lifestyle_cols.append(col)
+
+        elif any(k in col_low for k in ["anx", "sad", "depress", "worry", "nervous", "hopeless", "stress", "pressure", "tense"]):
+            mental_cols.append(col)
+
+        else:
+            other_cols.append(col)
 
     def input_field(col):
         label = display_label(col)
@@ -1024,7 +539,7 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
                     max_value=5,
                     value=3,
                     step=1,
-                    help=slider_help_text(col),
+                    help="1 = ຕ່ຳຫຼາຍ, 5 = ສູງຫຼາຍ",
                     key=safe_key
                 )
             )
@@ -1042,7 +557,10 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
             display_to_original = {}
 
             for i, option in enumerate(clean_options):
-                label_text = display_option(option, col)
+                label_text = display_option(option)
+
+                if label_text == "ຕົວເລືອກອື່ນ":
+                    label_text = f"ຕົວເລືອກ {i + 1}"
 
                 if label_text in display_to_original:
                     label_text = f"{label_text} {i + 1}"
@@ -1066,7 +584,7 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
             key=safe_key
         )
 
-        return text_value if text_value else "ບໍ່ລະບຸ"
+        return text_value if text_value else "Unknown"
 
     def show_group(title, cols):
         st.markdown(f"### {title}")
@@ -1086,15 +604,18 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
 
         for key, value in input_dict.items():
             lao_key = display_label(key)
-            lao_value = display_option(value, key)
+            lao_value = display_option(value)
             lines.append(f"{lao_key}: {lao_value}")
 
         return "\n".join(lines)
 
     st.subheader("ປ້ອນຂໍ້ມູນນັກຮຽນ")
 
-    for section_title, section_cols in section_columns:
-        show_group(section_title, section_cols)
+    show_group("1. ຂໍ້ມູນດ້ານການຮຽນ", academic_cols)
+    show_group("2. ສຸຂະພາບຈິດ ແລະ ຄວາມຄຽດ", mental_cols)
+    show_group("3. ຄອບຄົວ ແລະ ການຊ່ວຍເຫຼືອ", support_cols)
+    show_group("4. ວິຖີຊີວິດ", lifestyle_cols)
+    show_group("5. ຂໍ້ມູນອື່ນໆ", other_cols)
 
     st.divider()
 
@@ -1191,8 +712,8 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
         st.write(conclusion)
 
         st.caption(
-            "ຜົນນີ້ເປັນການຄັດກອງເບື້ອງຕົ້ນ. "
-            "ຖ້າຮູ້ສຶກບໍ່ດີ ຫຼື ບໍ່ປອດໄພ, ໃຫ້ບອກຄູ ພໍ່ແມ່ ຫຼື ຄົນທີ່ໄວ້ໃຈທັນທີ."
+            "ເຄື່ອງມືນີ້ໃຊ້ເພື່ອການຄັດກອງ ແລະ ການວິຈັຍເທົ່ານັ້ນ. "
+            "ບໍ່ຄວນໃຊ້ແທນການປະເມີນຈາກຜູ້ຊ່ຽວຊານ."
         )
 
         send_to_counselor = risk in AUTO_COUNSELOR_LEVELS
@@ -1221,7 +742,7 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
                     "send_to_counselor": True,
                     "form_answers": safe_answers,
                     "form_answers_text": format_form_answers_lao(safe_answers),
-                    "alert_flow": "ສົ່ງໃຫ້ທີ່ປຶກສາເທົ່ານັ້ນ",
+                    "alert_flow": "Counselor only",
                     "disclaimer": "ຜົນນີ້ແມ່ນການຄັດກອງ ບໍ່ແມ່ນການວິນິດໄສທາງການແພດ."
                 }
 
@@ -1229,11 +750,11 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
 
                 if sent:
                     st.success(
-                        "ສົ່ງຜົນໄປຫາລະບົບແຈ້ງເຕືອນສຳເລັດແລ້ວ. "
+                        "ສົ່ງຜົນໄປຫາລະບົບ n8n ສຳເລັດແລ້ວ. "
                         "ທີ່ປຶກສາຈະໄດ້ຮັບການແຈ້ງເຕືອນ."
                     )
                 else:
-                    st.error("ສົ່ງຜົນໄປຫາລະບົບແຈ້ງເຕືອນບໍ່ສຳເລັດ")
+                    st.error("ສົ່ງຜົນໄປ n8n ບໍ່ສຳເລັດ")
 
         else:
             st.info(
@@ -1251,7 +772,7 @@ elif page == "ກ່ຽວກັບ":
 
     st.write(
         """
-        ແດຊບອດນີ້ໃຊ້ໂມເດວປັນຍາປະດິດທີ່ຝຶກແລ້ວ
+        ແດຊບອດນີ້ເຊື່ອມກັບໂມເດວ AI ທີ່ຝຶກແລ້ວ
         ເພື່ອຊ່ວຍຄັດກອງຄວາມສ່ຽງຂອງນັກຮຽນ.
 
         ລະບົບຈະຮັບຂໍ້ມູນຈາກແບບຟອມ,
@@ -1260,7 +781,7 @@ elif page == "ກ່ຽວກັບ":
         ຕ່ຳ, ປານກາງ, ແລະ ສູງ.
 
         ຖ້າຜົນຢູ່ໃນລະດັບປານກາງ ຫຼື ສູງ,
-        ລະບົບຈະສົ່ງການແຈ້ງເຕືອນໄປຫາທີ່ປຶກສາ.
+        ລະບົບຈະສົ່ງການແຈ້ງເຕືອນໄປຫາທີ່ປຶກສາຜ່ານ n8n.
 
         ຜົນຈາກລະບົບນີ້ແມ່ນການຄັດກອງເບື້ອງຕົ້ນ.
         ບໍ່ແມ່ນການວິນິດໄສທາງການແພດ.
