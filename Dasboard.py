@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ແບບນຸ່ມນວນສຳລັບເດັກ v12"
+APP_VERSION = "ລຸ້ນ: ນັກຮຽນ ແລະ ຄົນທົ່ວໄປ v13"
 
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
@@ -630,6 +630,33 @@ FORM_CHOICE_DISPLAY_MAP = {
     },
 }
 
+# Labels for the general-people form.
+# These keep the meaning broad and not school-only.
+GENERAL_LABEL_MAP = {
+    "School level": "ລະດັບການສຶກສາ",
+    "Average grade": "ຜົນການຮຽນ ຫຼື ຜົນງານໂດຍລວມ",
+    "Academic performance self": "ຄິດວ່າຜົນງານຂອງຕົນເປັນແນວໃດ",
+    "Focus in class": "ຕັ້ງໃຈກັບວຽກ ຫຼື ກິດຈະກຳໄດ້ງ່າຍປານໃດ",
+    "Academic pressure": "ຄວາມກົດດັນຈາກວຽກ ຫຼື ໜ້າທີ່",
+    "Homework pressure": "ຄວາມກົດດັນຈາກວຽກທີ່ຕ້ອງເຮັດ",
+    "Homework pressure3": "ວຽກຫຼາຍເຮັດໃຫ້ຮູ້ສຶກກົດດັນ",
+    "CGPA": "ຜົນການຮຽນ ຫຼື ຜົນງານສະສົມ",
+    "Study satisfaction": "ຄວາມພໍໃຈຕໍ່ວຽກ ຫຼື ການຮຽນຮູ້",
+    "Study hours day": "ໃຊ້ເວລາຮຽນຮູ້ ຫຼື ເຮັດວຽກຈັກຊົ່ວໂມງຕໍ່ມື້",
+    "Time_to_relax": "ມີເວລາພັກຜ່ອນບໍ່",
+    "Stress_schoolwork": "ວຽກ ຫຼື ພາລະປະຈຳວັນເຮັດໃຫ້ຄຽດ",
+    "Stress_hard_balance": "ຈັດເວລາວຽກ ແລະ ຊີວິດຍາກ",
+    "Dep_cannot_focus": "ຕັ້ງໃຈກັບວຽກ ຫຼື ກິດຈະກຳບໍ່ໄດ້",
+}
+
+# Columns hidden from the general-people form.
+# The model still receives safe neutral default values for these fields.
+GENERAL_HIDDEN_COLUMNS = {
+    "School level", "Average grade", "Academic performance self", "Focus in class",
+    "Academic pressure", "Homework pressure", "Homework pressure3", "CGPA",
+    "Study satisfaction", "Sleep hours day", "Study hours day", "Stress_schoolwork"
+}
+
 # Five form groups requested by the user.
 # The basic student information now appears first.
 SECTION_GROUPS = {
@@ -672,6 +699,41 @@ SECTION_ORDER = [
     "4. ສຸຂະພາບຈິດ ແລະ ຄວາມຄຽດ",
     "5. ຄອບຄົວ ແລະ ການຊ່ວຍເຫຼືອ",
     "6. ຂໍ້ມູນເພີ່ມເຕີມ"
+]
+
+GENERAL_SECTION_GROUPS = {
+    "1. ຂໍ້ມູນທົ່ວໄປ": [
+        "Age", "Gender", "Province", "Living_with", "Family_financial_status"
+    ],
+    "2. ວິຖີຊີວິດ": [
+        "Sleep hours night", "Healthy_meals_freq", "Exercise_freq", "Online_time_daily",
+        "Daytime_tiredness", "Skip_meals_freq", "Time_to_relax", "Phone_before_sleep"
+    ],
+    "3. ຄວາມຮູ້ສຶກ ແລະ ຄວາມຄຽດ": [
+        "Stress_level_general", "Worry or tense freq", "Sad or hopeless freq",
+        "Financial stress", "Depression severity", "Anxiety severity",
+        "Anx_nervous", "Anx_worry_many_things", "Anx_hard_to_relax",
+        "Anx_restless", "Anx_upset_easily", "Anx_something_bad", "Anx_sleep_problem",
+        "Aep_sad_most_days", "Dep_lose_interest", "Dep_tired_often", "Dep_sleep_problem",
+        "Dep_feel_failure", "Dep_cannot_focus", "Dep_slow_thinking", "Dep_hopeless",
+        "Dep_self_harm_thoughts", "Stress_too_much_manage", "Stress_daily_tasks",
+        "Stress_pressure_do_well", "Stress_hard_balance"
+    ],
+    "4. ການຊ່ວຍເຫຼືອ ແລະ ກຳລັງໃຈ": [
+        "Family support when stressed", "Talk to someone when stressed",
+        "Support_someone_to_talk", "Support_family", "Support_friends",
+        "Support_understood", "Support_trust_adult",
+        "Life_happy", "Self_confident", "Feel_calm", "Handle_problems", "Future_hope"
+    ],
+    "5. ຂໍ້ມູນເພີ່ມເຕີມ": []
+}
+
+GENERAL_SECTION_ORDER = [
+    "1. ຂໍ້ມູນທົ່ວໄປ",
+    "2. ວິຖີຊີວິດ",
+    "3. ຄວາມຮູ້ສຶກ ແລະ ຄວາມຄຽດ",
+    "4. ການຊ່ວຍເຫຼືອ ແລະ ກຳລັງໃຈ",
+    "5. ຂໍ້ມູນເພີ່ມເຕີມ"
 ]
 
 def normalize_text(value):
@@ -958,8 +1020,11 @@ def infer_lao_label(col):
     return "ຂໍ້ມູນເພີ່ມເຕີມ"
 
 
-def display_label(col):
+def display_label(col, form_mode="student"):
     canonical_col = get_canonical_column(col)
+
+    if form_mode == "general" and canonical_col in GENERAL_LABEL_MAP:
+        return GENERAL_LABEL_MAP[canonical_col]
 
     if canonical_col in LABEL_MAP:
         return LABEL_MAP[canonical_col]
@@ -968,27 +1033,44 @@ def display_label(col):
     return infer_lao_label(col)
 
 
-def build_section_columns(all_columns):
+def build_section_columns(all_columns, form_mode="student"):
     available = list(all_columns)
     used = set()
     sections = []
 
-    for section_title in SECTION_ORDER:
+    if form_mode == "general":
+        section_order = GENERAL_SECTION_ORDER
+        section_groups = GENERAL_SECTION_GROUPS
+        hidden_columns = GENERAL_HIDDEN_COLUMNS
+    else:
+        section_order = SECTION_ORDER
+        section_groups = SECTION_GROUPS
+        hidden_columns = set()
+
+    for section_title in section_order:
         cols = []
-        wanted = SECTION_GROUPS[section_title]
+        wanted = section_groups[section_title]
 
         for target_col in wanted:
             for actual_col in available:
                 if actual_col in used:
                     continue
-                if get_canonical_column(actual_col) == target_col:
+                canonical_actual = get_canonical_column(actual_col)
+                if canonical_actual in hidden_columns:
+                    used.add(actual_col)
+                    continue
+                if canonical_actual == target_col:
                     cols.append(actual_col)
                     used.add(actual_col)
                     break
 
-        # Put any future unknown columns into Section 5.
-        if section_title == "6. ຂໍ້ມູນເພີ່ມເຕີມ":
-            extra_cols = [c for c in available if c not in used]
+        # Put any future unknown columns into the final extra section.
+        if section_title == section_order[-1]:
+            extra_cols = []
+            for c in available:
+                canonical_c = get_canonical_column(c)
+                if c not in used and canonical_c not in hidden_columns:
+                    extra_cols.append(c)
             cols.extend(extra_cols)
             used.update(extra_cols)
 
@@ -1277,7 +1359,7 @@ def column_problem_category(col):
     return "ວິຖີຊີວິດ"
 
 
-def build_detail_analysis(input_dict, risk, class_probabilities, confidence, student_name):
+def build_detail_analysis(input_dict, risk, class_probabilities, confidence, person_name, form_mode="student"):
     category_scores = {category: [] for category in PROBLEM_CATEGORY_COLUMNS}
     high_items = []
 
@@ -1291,7 +1373,7 @@ def build_detail_analysis(input_dict, risk, class_probabilities, confidence, stu
 
         if score >= 4:
             high_items.append({
-                "ຂໍ້ທີ່ຄວນເບິ່ງແຍງ": display_label(col),
+                "ຂໍ້ທີ່ຄວນເບິ່ງແຍງ": display_label(col, form_mode),
                 "ຄຳຕອບ": display_option(value, col),
                 "ລະດັບກັງວົນ": round(score, 1),
                 "ກຸ່ມບັນຫາ": category,
@@ -1318,7 +1400,8 @@ def build_detail_analysis(input_dict, risk, class_probabilities, confidence, stu
     ])
 
     return {
-        "student_name": student_name,
+        "student_name": person_name,
+        "form_mode": form_mode,
         "risk": risk,
         "risk_lao": risk_lao_map.get(risk, risk),
         "class_probabilities": class_probabilities,
@@ -1612,10 +1695,63 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
     except Exception:
         cat_options = {}
 
-    section_columns = build_section_columns(common_cols)
+    def choose_neutral_category(col):
+        options = cat_options.get(col, [])
+        clean_options = []
+        for option in options:
+            option_text = str(option).strip()
+            if normalize_text(option_text) not in ["nan", "none", ""]:
+                clean_options.append(option)
+
+        if not clean_options:
+            return "Unknown"
+
+        preferred_words = [
+            "moderate", "average", "fair", "sometimes", "some",
+            "good", "m.4", "m4", "ມ.4", "60", "5-7", "5–7"
+        ]
+        for word in preferred_words:
+            for option in clean_options:
+                option_text = normalize_text(option)
+                if word in option_text:
+                    return option
+
+        return clean_options[0]
+
+    def complete_input_for_model(input_dict):
+        complete = dict(input_dict)
+        for col in common_cols:
+            if col in complete and not is_unanswered(complete[col]):
+                continue
+            if col in num_cols:
+                complete[col] = 3.0
+            else:
+                complete[col] = choose_neutral_category(col)
+        return complete
+
+    form_choice = st.radio(
+        "ເລືອກປະເພດແບບຟອມ",
+        ["ນັກຮຽນ", "ບຸກຄົນທົ່ວໄປ"],
+        horizontal=True,
+        key="form_mode_choice"
+    )
+
+    form_mode = "general" if form_choice == "ບຸກຄົນທົ່ວໄປ" else "student"
+
+    if form_mode == "general":
+        st.info(
+            "ໂໝດນີ້ໃຊ້ສຳລັບຄົນທົ່ວໄປທຸກໄວ. "
+            "ຄຳຖາມທີ່ເກື່ອນກັບໂຮງຮຽນຈະຖືກເຊື່ອງ. "
+            "ລະບົບຈະໃສ່ຄ່າກາງໃຫ້ອັດຕະໂນມັດ. "
+            "ຜົນນີ້ເປັນການຄັດກອງເບື້ອງຕົ້ນເທົ່ານັ້ນ."
+        )
+    else:
+        st.info("ໂໝດນີ້ເໝາະກັບນັກຮຽນ ຫຼື ໄວຮຽນ.")
+
+    section_columns = build_section_columns(common_cols, form_mode)
 
     def input_field(col):
-        label = display_label(col)
+        label = display_label(col, form_mode)
         safe_key = f"input_{col}"
 
         if col in num_cols:
@@ -1691,13 +1827,13 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
         lines = []
 
         for key, value in input_dict.items():
-            lao_key = display_label(key)
+            lao_key = display_label(key, form_mode)
             lao_value = display_option(value, key)
             lines.append(f"{lao_key}: {lao_value}")
 
         return "\n".join(lines)
 
-    st.subheader("ປ້ອນຂໍ້ມູນນັກຮຽນ")
+    st.subheader("ປ້ອນຂໍ້ມູນນັກຮຽນ" if form_mode == "student" else "ປ້ອນຂໍ້ມູນຄົນທົ່ວໄປ")
 
     for section_title, section_cols in section_columns:
         show_group(section_title, section_cols)
@@ -1706,8 +1842,10 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
 
     st.subheader("ຂໍ້ມູນສຳລັບສົ່ງແຈ້ງເຕືອນ")
 
+    person_name_label = "ຊື່ນັກຮຽນ ຫຼື ລະຫັດນັກຮຽນ" if form_mode == "student" else "ຊື່ ຫຼື ລະຫັດຜູ້ຕອບ"
+
     student_name_for_report = st.text_input(
-        "ຊື່ນັກຮຽນ ຫຼື ລະຫັດນັກຮຽນ",
+        person_name_label,
         key="student_name_auto"
     )
 
@@ -1725,7 +1863,7 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
 
     missing_submit_info_now = []
     if is_unanswered(student_name_for_report):
-        missing_submit_info_now.append("ຊື່ນັກຮຽນ ຫຼື ລະຫັດນັກຮຽນ")
+        missing_submit_info_now.append(person_name_label)
     if not consent_alert:
         missing_submit_info_now.append("ການຍິນຍອມໃຫ້ສົ່ງຜົນໄປຫາທີ່ປຶກສາ")
 
@@ -1738,7 +1876,7 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
         st.warning("ກະລຸນາຕອບຂໍ້ມູນໃຫ້ຄົບກ່ອນກົດສົ່ງ.")
         with st.expander("ເບິ່ງຂໍ້ທີ່ຍັງຂາດ"):
             missing_labels = [
-                display_label(col) for col in unanswered_cols_now
+                display_label(col, form_mode) for col in unanswered_cols_now
             ] + missing_submit_info_now
 
             if missing_labels:
@@ -1760,21 +1898,23 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
 
         missing_submit_info = []
         if is_unanswered(student_name_for_report):
-            missing_submit_info.append("ຊື່ນັກຮຽນ ຫຼື ລະຫັດນັກຮຽນ")
+            missing_submit_info.append(person_name_label)
         if not consent_alert:
             missing_submit_info.append("ການຍິນຍອມໃຫ້ສົ່ງຜົນໄປຫາທີ່ປຶກສາ")
 
         if unanswered_cols or missing_submit_info:
             st.warning("ກະລຸນາຕອບທຸກຂໍ້ກ່ອນກົດສົ່ງ.")
             missing_labels = [
-                display_label(col) for col in unanswered_cols
+                display_label(col, form_mode) for col in unanswered_cols
             ] + missing_submit_info
             st.write(" • " + "\n • ".join(missing_labels[:30]))
             if len(missing_labels) > 30:
                 st.caption(f"ຍັງມີອີກ {len(missing_labels) - 30} ຂໍ້")
             st.stop()
 
-        input_df = pd.DataFrame([user_input])
+        model_input = complete_input_for_model(user_input) if form_mode == "general" else dict(user_input)
+
+        input_df = pd.DataFrame([model_input])
         input_df = input_df[common_cols]
 
         for col in cat_cols:
@@ -1856,7 +1996,8 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
             risk,
             class_probabilities,
             confidence,
-            student_name_for_report
+            student_name_for_report,
+            form_mode
         )
         st.session_state["latest_detail_result"] = detail_result
 
@@ -1875,7 +2016,7 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
         if send_to_counselor:
 
             if not student_name_for_report:
-                st.warning("ກະລຸນາໃສ່ຊື່ ຫຼື ລະຫັດນັກຮຽນກ່ອນສົ່ງ")
+                st.warning(f"ກະລຸນາໃສ່{person_name_label}ກ່ອນສົ່ງ")
 
             elif not consent_alert:
                 st.warning("ກະລຸນາກົດຍິນຍອມກ່ອນສົ່ງການແຈ້ງເຕືອນ")
@@ -1883,6 +2024,7 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
             else:
                 report_data = {
                     "student_name": student_name_for_report,
+                    "form_type": form_choice,
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "risk_level": risk,
                     "risk_level_lao": risk_lao,
