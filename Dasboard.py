@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ນັກຮຽນ ແລະ ຄົນທົ່ວໄປ v13"
+APP_VERSION = "ລຸ້ນ: ແຍກຜົນນັກຮຽນ ແລະ ຄົນທົ່ວໄປ v14"
 
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
@@ -47,27 +47,30 @@ def send_report_to_n8n(report_data):
         return False
 
 
-def make_conclusion(risk):
+def make_conclusion(risk, form_mode="student"):
+    is_general = form_mode == "general"
+    person_word = "ຜູ້ຕອບ" if is_general else "ນັກຮຽນ"
+    helper_word = "ຄົນໃກ້ຊິດ ຫຼື ຜູ້ໃຫ້ຄຳປຶກສາ" if is_general else "ຄູ, ພໍ່ແມ່ ຫຼື ທີ່ປຶກສາ"
+
     if risk == "Severe":
         return (
-            "ຜົນການຄັດກອງສະແດງວ່າ ນັກຮຽນມີຄວາມສ່ຽງສູງ. "
-            "ຄວນໃຫ້ທີ່ປຶກສາຕິດຕາມ ແລະ ໃຫ້ການຊ່ວຍເຫຼືອໂດຍໄວ. "
+            f"ຜົນການຄັດກອງສະແດງວ່າ {person_word} ມີຄວາມສ່ຽງສູງ. "
+            f"ຄວນຮີບຄຸຍກັບ {helper_word} ເພື່ອຮັບການຊ່ວຍເຫຼືອ. "
             "ຜົນນີ້ແມ່ນການຄັດກອງ ບໍ່ແມ່ນການວິນິດໄສທາງການແພດ."
         )
 
     if risk == "Moderate":
         return (
-            "ຜົນການຄັດກອງສະແດງວ່າ ນັກຮຽນມີຄວາມສ່ຽງປານກາງ. "
-            "ຄວນມີການຕິດຕາມ ແລະ ໃຫ້ຄຳປຶກສາເມື່ອຈຳເປັນ. "
+            f"ຜົນການຄັດກອງສະແດງວ່າ {person_word} ມີຄວາມສ່ຽງປານກາງ. "
+            "ຄວນເລີ່ມດູແລຕົນເອງຫຼາຍຂຶ້ນ ແລະ ລອງຄຸຍກັບຄົນທີ່ໄວ້ໃຈ. "
             "ຜົນນີ້ແມ່ນການຄັດກອງ ບໍ່ແມ່ນການວິນິດໄສທາງການແພດ."
         )
 
     return (
-        "ຜົນການຄັດກອງສະແດງວ່າ ນັກຮຽນມີຄວາມສ່ຽງຕ່ຳ. "
-        "ແຕ່ຍັງຄວນດູແລ ແລະ ຕິດຕາມສຸຂະພາບຈິດຢ່າງຕໍ່ເນື່ອງ. "
+        f"ຜົນການຄັດກອງສະແດງວ່າ {person_word} ມີຄວາມສ່ຽງຕ່ຳ. "
+        "ແຕ່ຍັງຄວນດູແລການນອນ, ອາຫານ, ອາລົມ ແລະ ຄົນຮອບຂ້າງ. "
         "ຜົນນີ້ແມ່ນການຄັດກອງ ບໍ່ແມ່ນການວິນິດໄສທາງການແພດ."
     )
-
 
 def make_json_safe(value):
     if isinstance(value, np.integer):
@@ -1314,6 +1317,51 @@ def _text_score(col, value):
     return 2.5
 
 
+CATEGORY_GENERAL_ADVICE = {
+    "ສຸຂະພາບຈິດ": [
+        "ບອກຄົນໃກ້ຊິດ ຫຼື ຄົນທີ່ໄວ້ໃຈ.",
+        "ຢ່າຢູ່ຄົນດຽວເມື່ອຮູ້ສຶກໜັກໃຈ.",
+        "ຖ້າຮູ້ສຶກບໍ່ປອດໄພ ໃຫ້ຂໍຊ່ວຍເຫຼືອທັນທີ."
+    ],
+    "ຄວາມຄຽດ": [
+        "ແບ່ງວຽກໃຫຍ່ເປັນວຽກນ້ອຍ.",
+        "ພັກ 5–10 ນາທີເມື່ອຄຽດຫຼາຍ.",
+        "ຈັດລຳດັບສິ່ງທີ່ຕ້ອງເຮັດກ່ອນ."
+    ],
+    "ການນອນ": [
+        "ພະຍາຍາມນອນໃຫ້ພໍທຸກຄືນ.",
+        "ຫຼຸດໂທລະສັບກ່ອນນອນ.",
+        "ຈັດເວລານອນ ແລະ ຕື່ນໃຫ້ຄົງທີ່."
+    ],
+    "ຄອບຄົວ": [
+        "ລອງລົມກັບຄອບຄົວໃນເວລາທີ່ສະຫງົບ.",
+        "ບອກຄວາມຮູ້ສຶກດ້ວຍຄຳງ່າຍໆ.",
+        "ຖ້າລົມກັນຍາກ ໃຫ້ຂໍຄົນກາງທີ່ໄວ້ໃຈຊ່ວຍ."
+    ],
+    "ການຊ່ວຍເຫຼືອ": [
+        "ເລືອກຄົນ 1 ຄົນທີ່ໄວ້ໃຈແລ້ວລົມດ້ວຍ.",
+        "ຢ່າເກັບບັນຫາໄວ້ຄົນດຽວ.",
+        "ຖ້າຈຳເປັນ ໃຫ້ຂໍພົບຜູ້ໃຫ້ຄຳປຶກສາ."
+    ],
+    "ວິຖີຊີວິດ": [
+        "ກິນອາຫານໃຫ້ຄົບ.",
+        "ຂະຫຍັບຮ່າງກາຍເບົາໆທຸກມື້.",
+        "ຫຼຸດເວລາອອນລາຍເມື່ອຮູ້ສຶກເມື່ອຍ."
+    ],
+    "ການເງິນ": [
+        "ຈົດລາຍຈ່າຍທີ່ຈຳເປັນກ່ອນ.",
+        "ຫຼຸດການໃຊ້ຈ່າຍທີ່ບໍ່ຈຳເປັນ.",
+        "ລອງຂໍຄຳແນະນຳຈາກຄົນທີ່ໄວ້ໃຈ."
+    ],
+}
+
+
+def advice_for_category(category, form_mode):
+    if form_mode == "general":
+        return CATEGORY_GENERAL_ADVICE.get(category, CATEGORY_SIMPLE_ADVICE.get(category, []))
+    return CATEGORY_SIMPLE_ADVICE.get(category, [])
+
+
 def concern_score(col, value):
     """Return concern score from 0 to 5. Higher means more concern."""
     if is_unanswered(value):
@@ -1360,7 +1408,11 @@ def column_problem_category(col):
 
 
 def build_detail_analysis(input_dict, risk, class_probabilities, confidence, person_name, form_mode="student"):
-    category_scores = {category: [] for category in PROBLEM_CATEGORY_COLUMNS}
+    active_problem_categories = [
+        category for category in PROBLEM_CATEGORY_COLUMNS
+        if not (form_mode == "general" and category == "ການຮຽນ")
+    ]
+    category_scores = {category: [] for category in active_problem_categories}
     high_items = []
 
     for col, value in input_dict.items():
@@ -1369,6 +1421,8 @@ def build_detail_analysis(input_dict, risk, class_probabilities, confidence, per
             continue
 
         category = column_problem_category(col)
+        if form_mode == "general" and category == "ການຮຽນ":
+            continue
         category_scores.setdefault(category, []).append(score)
 
         if score >= 4:
@@ -1448,15 +1502,12 @@ def detail_summary_text(detail):
     )
 
 
-def show_detail_result_page():
-    st.header("ຜົນລະອຽດແບບງ່າຍ")
-
-    detail = st.session_state.get("latest_detail_result")
+def render_detail_result(detail, form_mode):
     if not detail:
-        st.info(
-            "ຍັງບໍ່ມີຜົນລະອຽດ. "
-            "ກະລຸນາໄປໜ້າ ທຳນາຍຄວາມສ່ຽງ ແລ້ວກົດທຳນາຍກ່ອນ."
-        )
+        if form_mode == "student":
+            st.info("ຍັງບໍ່ມີຜົນນັກຮຽນ. ກະລຸນາໄປໜ້າທຳນາຍ ແລ້ວເລືອກແບບຟອມນັກຮຽນກ່ອນ.")
+        else:
+            st.info("ຍັງບໍ່ມີຜົນຄົນທົ່ວໄປ. ກະລຸນາໄປໜ້າທຳນາຍ ແລ້ວເລືອກແບບຟອມບຸກຄົນທົ່ວໄປກ່ອນ.")
         return
 
     risk_value = detail.get("risk", "Low")
@@ -1467,13 +1518,19 @@ def show_detail_result_page():
         "Severe": "risk-severe"
     }.get(risk_value, "risk-low")
 
+    is_general = form_mode == "general"
+    result_title = "ຜົນຂອງບຸກຄົນທົ່ວໄປ" if is_general else "ຜົນຂອງນັກຮຽນ"
+    name_label = "ຊື່ ຫຼື ລະຫັດຜູ້ຕອບ" if is_general else "ຊື່ ຫຼື ລະຫັດນັກຮຽນ"
+    target_note = "ຜົນນີ້ບໍ່ໄດ້ອີງກັບຄຳຖາມໂຮງຮຽນ." if is_general else "ຜົນນີ້ອີງກັບຄຳຕອບຂອງນັກຮຽນ."
+    help_people = "ຄອບຄົວ, ໝູ່ສະໜິດ, ຫຼື ຜູ້ໃຫ້ຄຳປຶກສາ" if is_general else "ຄູ, ພໍ່ແມ່, ຫຼື ທີ່ປຶກສາ"
+
     top_categories = detail.get("top_categories", [])
     top_text = ", ".join(top_categories[:3]) if top_categories else "ບໍ່ພົບຈຸດທີ່ກັງວົນຫຼາຍ"
 
     st.markdown(f"""
     <div class='hero-box'>
-        <div style='font-size:18px; font-weight:700; color:#31445f;'>🌈 ຜົນຂອງເຈົ້າ</div>
-        <div style='font-size:16px; color:#42546b; margin-top:8px;'>ຫນ້ານີ້ຊ່ວຍບອກຢ່າງງ່າຍວ່າ ຕອນນີ້ຄວນດູແລຕົວເອງດ້ານໃດກ່ອນ</div>
+        <div style='font-size:22px; font-weight:700; color:#31445f;'>🌈 {result_title}</div>
+        <div style='font-size:16px; color:#42546b; margin-top:8px;'>{target_note}</div>
         <div class='soft-pill {risk_class}'>ລະດັບຄວາມສ່ຽງ: {risk_lao}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -1482,7 +1539,7 @@ def show_detail_result_page():
     with c1:
         st.markdown(f"""
         <div class='friendly-card'>
-            <div class='mini-title'>👧 ຊື່ ຫຼື ລະຫັດ</div>
+            <div class='mini-title'>👤 {name_label}</div>
             <div class='big-number' style='font-size:24px'>{detail.get('student_name', '-')}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1504,11 +1561,11 @@ def show_detail_result_page():
     st.markdown("<div class='friendly-card'>", unsafe_allow_html=True)
     st.subheader("ສະຫຼຸບແບບສັ້ນ")
     if risk_value == 'Low':
-        st.success("ຕອນນີ້ຜົນອອກມາຢູ່ໃນລະດັບຕ່ຳ. ນັ້ນໝາຍຄວາມວ່າ ເຈົ້າຍັງຄ່ອນຂ້າງປອດໄພ. ແຕ່ກໍຄວນດູແລການນອນ, ການກິນ ແລະ ອາລົມຂອງຕົນເອງຕໍ່ໄປ.")
+        st.success("ຜົນຢູ່ໃນລະດັບຕ່ຳ. ຍັງຄວນດູແລການນອນ, ອາຫານ, ອາລົມ ແລະ ຄົນຮອບຂ້າງ.")
     elif risk_value == 'Moderate':
-        st.warning("ຕອນນີ້ຜົນອອກມາຢູ່ໃນລະດັບປານກາງ. ຄວນເລີ່ມເບິ່ງແຍງຕົນເອງຫຼາຍຂຶ້ນ ແລະ ລອງຄຸຍກັບຄົນທີ່ໄວ້ໃຈ.")
+        st.warning(f"ຜົນຢູ່ໃນລະດັບປານກາງ. ຄວນເລີ່ມດູແລຕົນເອງຫຼາຍຂຶ້ນ ແລະ ລອງຄຸຍກັບ {help_people}.")
     else:
-        st.error("ຕອນນີ້ຜົນອອກມາຢູ່ໃນລະດັບສູງ. ຄວນຮີບບອກຄູ, ພໍ່ແມ່, ຫຼື ຜູ້ໃຫຍ່ທີ່ໄວ້ໃຈ ເພື່ອຂໍຄວາມຊ່ວຍເຫຼືອ.")
+        st.error(f"ຜົນຢູ່ໃນລະດັບສູງ. ຄວນຮີບຄຸຍກັບ {help_people} ເພື່ອຂໍການຊ່ວຍເຫຼືອ.")
 
     st.write(f"**ຈຸດທີ່ຄວນເບິ່ງແຍງກ່ອນ:** {top_text}")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -1525,7 +1582,7 @@ def show_detail_result_page():
     st.markdown("<div class='friendly-card'>", unsafe_allow_html=True)
     st.subheader("ສິ່ງທີ່ຄວນລະວັງກ່ອນ")
     if high_items_df.empty:
-        st.success("ບໍ່ພົບຂໍ້ທີ່ນ່າກັງວົນຫຼາຍ. ດີຫຼາຍ! ຂໍໃຫ້ຮັກສາການດູແລຕົນເອງໄວ້ແບບນີ້.")
+        st.success("ບໍ່ພົບຂໍ້ທີ່ນ່າກັງວົນຫຼາຍ. ຂໍໃຫ້ຮັກສາການດູແລຕົນເອງໄວ້.")
     else:
         for _, row in high_items_df.head(5).iterrows():
             st.markdown(f"""
@@ -1546,24 +1603,44 @@ def show_detail_result_page():
     else:
         for category in top_categories:
             st.markdown(f"##### {category}")
-            for advice in CATEGORY_SIMPLE_ADVICE.get(category, []):
+            for advice in advice_for_category(category, form_mode):
                 st.write(f"• {advice}")
     st.markdown("</div>", unsafe_allow_html=True)
 
     if detail.get("risk") == "Severe":
-        st.markdown("""
+        st.markdown(f"""
         <div class='danger-box'>
             <b>ສຳຄັນຫຼາຍ</b><br>
             ຖ້າຮູ້ສຶກຢາກທຳຮ້າຍຕົນເອງ ຫຼື ຮູ້ສຶກບໍ່ປອດໄພ,
-            ໃຫ້ບອກຄູ, ພໍ່ແມ່, ຫຼື ຜູ້ໃຫຍ່ທີ່ໄວ້ໃຈທັນທີ. ຢ່າຢູ່ຄົນດຽວ.
+            ໃຫ້ບອກ {help_people} ທັນທີ. ຢ່າຢູ່ຄົນດຽວ.
         </div>
         """, unsafe_allow_html=True)
     else:
-        st.info("ຖ້າມື້ໃດຮູ້ສຶກບໍ່ສະບາຍໃຈຫຼາຍຂຶ້ນ ໃຫ້ຮີບບອກຄົນທີ່ໄວ້ໃຈ.")
+        st.info(f"ຖ້າມື້ໃດຮູ້ສຶກບໍ່ສະບາຍໃຈຫຼາຍຂຶ້ນ ໃຫ້ຮີບບອກ {help_people}.")
 
-    st.caption(
-        "ໜ້ານີ້ໃຊ້ເພື່ອຊ່ວຍຄັດກອງເທົ່ານັ້ນ. ບໍ່ແມ່ນການວິນິດໄສທາງການແພດ."
+    st.caption("ໜ້ານີ້ໃຊ້ເພື່ອຊ່ວຍຄັດກອງເທົ່ານັ້ນ. ບໍ່ແມ່ນການວິນິດໄສທາງການແພດ.")
+
+
+def show_detail_result_page():
+    soft_intro(
+        "ຜົນລະອຽດ",
+        "ໜ້ານີ້ແຍກຜົນຂອງນັກຮຽນ ແລະ ຄົນທົ່ວໄປອອກຈາກກັນ. ກົດແຖບທີ່ຕ້ອງການເບິ່ງ.",
+        "🗂️"
     )
+
+    tab_student, tab_general = st.tabs(["🎒 ຜົນນັກຮຽນ", "👥 ຜົນຄົນທົ່ວໄປ"])
+
+    with tab_student:
+        render_detail_result(
+            st.session_state.get("latest_student_detail_result"),
+            "student"
+        )
+
+    with tab_general:
+        render_detail_result(
+            st.session_state.get("latest_general_detail_result"),
+            "general"
+        )
 
 # =========================================================
 # SIDEBAR
@@ -1938,7 +2015,7 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
         severe_p = class_probabilities.get("Severe", 0.0)
         confidence = max(low_p, moderate_p, severe_p)
 
-        conclusion = make_conclusion(risk)
+        conclusion = make_conclusion(risk, form_mode)
 
         safe_answers = {
             str(k): make_json_safe(v)
@@ -1999,16 +2076,22 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
             student_name_for_report,
             form_mode
         )
+        if form_mode == "student":
+            st.session_state["latest_student_detail_result"] = detail_result
+            result_tab_name = "ຜົນນັກຮຽນ"
+        else:
+            st.session_state["latest_general_detail_result"] = detail_result
+            result_tab_name = "ຜົນຄົນທົ່ວໄປ"
         st.session_state["latest_detail_result"] = detail_result
 
         st.info(
             "ຜົນລະອຽດຖືກກຽມໄວ້ແລ້ວ. "
-            "ໄປທີ່ໜ້າ ຜົນລະອຽດ ເພື່ອເບິ່ງກຸ່ມບັນຫາ ແລະ ຄຳແນະນຳ."
+            f"ໄປທີ່ໜ້າ ຜົນລະອຽດ ແລ້ວເລືອກແຖບ {result_tab_name}."
         )
 
         st.caption(
             "ຜົນນີ້ເປັນການຄັດກອງເບື້ອງຕົ້ນ. "
-            "ຖ້າຮູ້ສຶກບໍ່ດີ ຫຼື ບໍ່ປອດໄພ, ໃຫ້ບອກຄູ ພໍ່ແມ່ ຫຼື ຄົນທີ່ໄວ້ໃຈທັນທີ."
+            "ຖ້າຮູ້ສຶກບໍ່ດີ ຫຼື ບໍ່ປອດໄພ, ໃຫ້ບອກຄົນທີ່ໄວ້ໃຈທັນທີ."
         )
 
         send_to_counselor = risk in AUTO_COUNSELOR_LEVELS
