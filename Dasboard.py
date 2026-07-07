@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ຜົນລະອຽດ ແລະ ຄຳແນະນຳ v10"
+APP_VERSION = "ລຸ້ນ: ໜ້າຜົນລະອຽດແບບໃໝ່ v11"
 
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
@@ -105,19 +105,29 @@ st.markdown(
         font-family: 'Phetsarath OT', 'Times New Roman', serif !important;
     }
 
+    .stApp {
+        background: linear-gradient(180deg, #fff9f2 0%, #fefcff 35%, #f3fbff 100%);
+    }
+
     .main-title {
         font-size: 34px;
         font-weight: 700;
         margin-bottom: 10px;
+        color: #22304a;
     }
 
     .sub-text {
         font-size: 18px;
         margin-bottom: 25px;
+        color: #394b63;
     }
 
     .main-title, .sub-text, h1, h2, h3, p, div, label, input, textarea {
         font-family: 'Phetsarath OT', 'Times New Roman', serif !important;
+    }
+
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #f4f7ff 0%, #eefaf7 100%);
     }
 
     [data-testid="stSidebar"] div,
@@ -126,6 +136,65 @@ st.markdown(
     [data-testid="stSidebar"] input,
     [data-testid="stSidebar"] textarea {
         font-family: 'Phetsarath OT', 'Times New Roman', serif !important;
+    }
+
+    .friendly-card {
+        padding: 18px 20px;
+        border-radius: 20px;
+        background: white;
+        border: 1px solid #e9eef8;
+        box-shadow: 0 8px 22px rgba(101, 119, 168, 0.08);
+        margin-bottom: 14px;
+    }
+
+    .hero-box {
+        padding: 22px 24px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #fff5c8 0%, #ffe3f0 50%, #dff5ff 100%);
+        border: 1px solid #f4df8c;
+        box-shadow: 0 10px 24px rgba(190, 160, 63, 0.12);
+        margin-bottom: 18px;
+    }
+
+    .soft-pill {
+        display: inline-block;
+        padding: 7px 16px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 16px;
+        margin-top: 8px;
+    }
+
+    .risk-low { background: #dff7e8; color: #136b3c; }
+    .risk-moderate { background: #fff2c7; color: #8a5a00; }
+    .risk-severe { background: #ffe0e0; color: #a11b1b; }
+
+    .mini-title {
+        font-size: 15px;
+        color: #5d6b82;
+        margin-bottom: 6px;
+    }
+
+    .big-number {
+        font-size: 32px;
+        font-weight: 700;
+        color: #22304a;
+    }
+
+    .tip-box {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: #f7fbff;
+        border-left: 6px solid #6fb1ff;
+        margin-bottom: 10px;
+    }
+
+    .danger-box {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: #fff0f0;
+        border-left: 6px solid #ff7b7b;
+        margin-top: 8px;
     }
 
     span[data-testid="stIconMaterial"],
@@ -1253,7 +1322,7 @@ def detail_summary_text(detail):
 
 
 def show_detail_result_page():
-    st.header("ຜົນລະອຽດ ແລະ ຂໍ້ຄວນລະວັງ")
+    st.header("ຜົນລະອຽດແບບງ່າຍ")
 
     detail = st.session_state.get("latest_detail_result")
     if not detail:
@@ -1263,57 +1332,110 @@ def show_detail_result_page():
         )
         return
 
-    st.caption(f"ອັບເດດຫຼ້າສຸດ: {detail.get('timestamp', '')}")
+    risk_value = detail.get("risk", "Low")
+    risk_lao = detail.get("risk_lao", "ບໍ່ລະບຸ")
+    risk_class = {
+        "Low": "risk-low",
+        "Moderate": "risk-moderate",
+        "Severe": "risk-severe"
+    }.get(risk_value, "risk-low")
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("ລະດັບຄວາມສ່ຽງ", detail.get("risk_lao", ""))
-    col2.metric("ຄວາມໝັ້ນໃຈຂອງໂມເດວ", f"{detail.get('confidence', 0):.2f}%")
-    col3.metric("ຊື່ ຫຼື ລະຫັດ", detail.get("student_name", ""))
+    top_categories = detail.get("top_categories", [])
+    top_text = "、".join(top_categories[:3]) if top_categories else "ບໍ່ພົບຈຸດທີ່ກັງວົນຫຼາຍ"
 
-    st.subheader("ກຸ່ມບັນຫາທີ່ຄວນເບິ່ງແຍງ")
-    st.write(detail_summary_text(detail))
+    st.markdown(f"""
+    <div class='hero-box'>
+        <div style='font-size:18px; font-weight:700; color:#31445f;'>🌈 ຜົນຂອງເຈົ້າ</div>
+        <div style='font-size:16px; color:#42546b; margin-top:8px;'>ຫນ້ານີ້ຊ່ວຍບອກຢ່າງງ່າຍວ່າ ຕອນນີ້ຄວນດູແລຕົວເອງດ້ານໃດກ່ອນ</div>
+        <div class='soft-pill {risk_class}'>ລະດັບຄວາມສ່ຽງ: {risk_lao}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown(f"""
+        <div class='friendly-card'>
+            <div class='mini-title'>👧 ຊື່ ຫຼື ລະຫັດ</div>
+            <div class='big-number' style='font-size:24px'>{detail.get('student_name', '-')}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""
+        <div class='friendly-card'>
+            <div class='mini-title'>🎯 ຄວາມໝັ້ນໃຈຂອງໂມເດວ</div>
+            <div class='big-number'>{detail.get('confidence', 0):.2f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""
+        <div class='friendly-card'>
+            <div class='mini-title'>🕒 ເວລາອັບເດດ</div>
+            <div style='font-size:20px; font-weight:700; color:#22304a;'>{detail.get('timestamp', '')}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div class='friendly-card'>", unsafe_allow_html=True)
+    st.subheader("ສະຫຼຸບແບບສັ້ນ")
+    if risk_value == 'Low':
+        st.success("ຕອນນີ້ຜົນອອກມາຢູ່ໃນລະດັບຕ່ຳ. ນັ້ນໝາຍຄວາມວ່າ ເຈົ້າຍັງຄ່ອນຂ້າງປອດໄພ. ແຕ່ກໍຄວນດູແລການນອນ, ການກິນ ແລະ ອາລົມຂອງຕົນເອງຕໍ່ໄປ.")
+    elif risk_value == 'Moderate':
+        st.warning("ຕອນນີ້ຜົນອອກມາຢູ່ໃນລະດັບປານກາງ. ຄວນເລີ່ມເບິ່ງແຍງຕົນເອງຫຼາຍຂຶ້ນ ແລະ ລອງຄຸຍກັບຄົນທີ່ໄວ້ໃຈ.")
+    else:
+        st.error("ຕອນນີ້ຜົນອອກມາຢູ່ໃນລະດັບສູງ. ຄວນຮີບບອກຄູ, ພໍ່ແມ່, ຫຼື ຜູ້ໃຫຍ່ທີ່ໄວ້ໃຈ ເພື່ອຂໍຄວາມຊ່ວຍເຫຼືອ.")
+
+    st.write(f"**ຈຸດທີ່ຄວນເບິ່ງແຍງກ່ອນ:** {top_text}")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     concern_df = detail.get("concern_df", pd.DataFrame())
     if not concern_df.empty:
-        st.bar_chart(
-            data=concern_df,
-            x="ກຸ່ມບັນຫາ",
-            y="ຄະແນນກັງວົນ (%)"
-        )
-        st.dataframe(concern_df, use_container_width=True, hide_index=True)
+        st.markdown("<div class='friendly-card'>", unsafe_allow_html=True)
+        st.subheader("ກຸ່ມບັນຫາທີ່ຄວນໃສ່ໃຈ")
+        st.caption("ແຖບທີ່ສູງກວ່າ ໝາຍຄວາມວ່າ ກຸ່ມນັ້ນຄວນເບິ່ງແຍງຫຼາຍກວ່າ")
+        st.bar_chart(data=concern_df, x="ກຸ່ມບັນຫາ", y="ຄະແນນກັງວົນ (%)")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    st.subheader("ຂໍ້ທີ່ຄວນໃສ່ໃຈກ່ອນ")
     high_items_df = detail.get("high_items_df", pd.DataFrame())
+    st.markdown("<div class='friendly-card'>", unsafe_allow_html=True)
+    st.subheader("ສິ່ງທີ່ຄວນລະວັງກ່ອນ")
     if high_items_df.empty:
-        st.success("ບໍ່ພົບຄຳຕອບທີ່ຢູ່ໃນລະດັບກັງວົນສູງ.")
+        st.success("ບໍ່ພົບຂໍ້ທີ່ນ່າກັງວົນຫຼາຍ. ດີຫຼາຍ! ຂໍໃຫ້ຮັກສາການດູແລຕົນເອງໄວ້ແບບນີ້.")
     else:
-        st.dataframe(high_items_df.head(10), use_container_width=True, hide_index=True)
+        for _, row in high_items_df.head(5).iterrows():
+            st.markdown(f"""
+            <div class='tip-box'>
+                <b>• {row['ຂໍ້ທີ່ຄວນເບິ່ງແຍງ']}</b><br>
+                ຄຳຕອບ: {row['ຄຳຕອບ']}<br>
+                ຢູ່ໃນກຸ່ມ: {row['ກຸ່ມບັນຫາ']}
+            </div>
+            """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.subheader("ຄຳແນະນຳໃຫ້ລະວັງກ່ອນ")
-    top_categories = detail.get("top_categories", [])
+    st.markdown("<div class='friendly-card'>", unsafe_allow_html=True)
+    st.subheader("ວິທີດູແລຕົນເອງເບື້ອງຕົ້ນ")
     if not top_categories:
-        st.write("ຮັກສາການນອນ ການກິນ ແລະ ການຮຽນໃຫ້ສົມດຸນ.")
+        st.write("• ນອນໃຫ້ພໍ")
+        st.write("• ກິນອາຫານໃຫ້ຄົບ")
+        st.write("• ຄຸຍກັບຄົນທີ່ໄວ້ໃຈເມື່ອບໍ່ສະບາຍໃຈ")
     else:
         for category in top_categories:
-            st.markdown(f"#### {category}")
+            st.markdown(f"##### {category}")
             for advice in CATEGORY_SIMPLE_ADVICE.get(category, []):
                 st.write(f"• {advice}")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if detail.get("risk") == "Severe":
-        st.error(
-            "ຖ້າຮູ້ສຶກຢາກທຳຮ້າຍຕົນເອງ ຫຼື ບໍ່ປອດໄພ, "
-            "ໃຫ້ບອກຄູ ພໍ່ແມ່ ຫຼື ຄົນໃກ້ຕົວທັນທີ. "
-            "ຢ່າຢູ່ຄົນດຽວ."
-        )
+        st.markdown("""
+        <div class='danger-box'>
+            <b>ສຳຄັນຫຼາຍ</b><br>
+            ຖ້າຮູ້ສຶກຢາກທຳຮ້າຍຕົນເອງ ຫຼື ຮູ້ສຶກບໍ່ປອດໄພ,
+            ໃຫ້ບອກຄູ, ພໍ່ແມ່, ຫຼື ຜູ້ໃຫຍ່ທີ່ໄວ້ໃຈທັນທີ. ຢ່າຢູ່ຄົນດຽວ.
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        st.info(
-            "ຖ້າອາການໜັກຂຶ້ນ ຫຼື ຮູ້ສຶກບໍ່ປອດໄພ, "
-            "ໃຫ້ບອກຜູ້ໃຫຍ່ທີ່ໄວ້ໃຈທັນທີ."
-        )
+        st.info("ຖ້າມື້ໃດຮູ້ສຶກບໍ່ສະບາຍໃຈຫຼາຍຂຶ້ນ ໃຫ້ຮີບບອກຄົນທີ່ໄວ້ໃຈ.")
 
     st.caption(
-        "ການວິເຄາະນີ້ອີງຈາກຄຳຕອບໃນແບບຟອມ. "
-        "ມັນຊ່ວຍຊີ້ຈຸດທີ່ຄວນເບິ່ງແຍງ, ແຕ່ບໍ່ແທນຄຳແນະນຳຈາກຜູ້ຊ່ຽວຊານ."
+        "ໜ້ານີ້ໃຊ້ເພື່ອຊ່ວຍຄັດກອງເທົ່ານັ້ນ. ບໍ່ແມ່ນການວິນິດໄສທາງການແພດ."
     )
 
 # =========================================================
