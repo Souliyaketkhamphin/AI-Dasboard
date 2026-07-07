@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ຄ່າເລີ່ມຕົ້ນປອດໄພ v7"
+APP_VERSION = "ລຸ້ນ: ຕ້ອງຕອບຄົບກ່ອນສົ່ງ v9"
 
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
@@ -540,14 +540,22 @@ FORM_CHOICE_DISPLAY_MAP = {
 }
 
 # Five form groups requested by the user.
-# The order now follows the survey screenshots more closely.
+# The basic student information now appears first.
 SECTION_GROUPS = {
-    "1. ຂໍ້ມູນດ້ານການຮຽນ": [
+    "1. ຂໍ້ມູນພື້ນຖານ": [
+        "Age", "Gender", "Province", "School level",
+        "Living_with", "Family_financial_status"
+    ],
+    "2. ຂໍ້ມູນດ້ານການຮຽນ": [
         "Average grade", "Academic performance self", "Focus in class",
         "Academic pressure", "Homework pressure", "Homework pressure3",
         "CGPA", "Study satisfaction", "Sleep hours day", "Study hours day"
     ],
-    "2. ສຸຂະພາບຈິດ ແລະ ຄວາມຄຽດ": [
+    "3. ວິຖີຊີວິດ": [
+        "Sleep hours night", "Healthy_meals_freq", "Exercise_freq", "Online_time_daily",
+        "Daytime_tiredness", "Skip_meals_freq", "Time_to_relax", "Phone_before_sleep"
+    ],
+    "4. ສຸຂະພາບຈິດ ແລະ ຄວາມຄຽດ": [
         "Stress_level_general", "Worry or tense freq", "Sad or hopeless freq",
         "Financial stress", "Depression severity", "Anxiety severity",
         "Anx_nervous", "Anx_worry_many_things", "Anx_hard_to_relax",
@@ -558,26 +566,21 @@ SECTION_GROUPS = {
         "Stress_daily_tasks", "Stress_pressure_do_well", "Stress_hard_balance",
         "Life_happy", "Self_confident", "Feel_calm", "Handle_problems", "Future_hope"
     ],
-    "3. ຄອບຄົວ ແລະ ການຊ່ວຍເຫຼືອ": [
+    "5. ຄອບຄົວ ແລະ ການຊ່ວຍເຫຼືອ": [
         "Family support when stressed", "Talk to someone when stressed",
         "Support_someone_to_talk", "Support_family", "Support_friends",
         "Support_understood", "Support_trust_adult"
     ],
-    "4. ວິຖີຊີວິດ": [
-        "Sleep hours night", "Healthy_meals_freq", "Exercise_freq", "Online_time_daily",
-        "Daytime_tiredness", "Skip_meals_freq", "Time_to_relax", "Phone_before_sleep"
-    ],
-    "5. ຂໍ້ມູນອື່ນໆ": [
-        "Age", "Gender", "Province", "School level", "Living_with", "Family_financial_status"
-    ]
+    "6. ຂໍ້ມູນເພີ່ມເຕີມ": []
 }
 
 SECTION_ORDER = [
-    "1. ຂໍ້ມູນດ້ານການຮຽນ",
-    "2. ສຸຂະພາບຈິດ ແລະ ຄວາມຄຽດ",
-    "3. ຄອບຄົວ ແລະ ການຊ່ວຍເຫຼືອ",
-    "4. ວິຖີຊີວິດ",
-    "5. ຂໍ້ມູນອື່ນໆ"
+    "1. ຂໍ້ມູນພື້ນຖານ",
+    "2. ຂໍ້ມູນດ້ານການຮຽນ",
+    "3. ວິຖີຊີວິດ",
+    "4. ສຸຂະພາບຈິດ ແລະ ຄວາມຄຽດ",
+    "5. ຄອບຄົວ ແລະ ການຊ່ວຍເຫຼືອ",
+    "6. ຂໍ້ມູນເພີ່ມເຕີມ"
 ]
 
 def normalize_text(value):
@@ -861,7 +864,7 @@ def infer_lao_label(col):
     if "future" in text or "hope" in text:
         return "ຄວາມຫວັງຕໍ່ອະນາຄົດ"
 
-    return "ຂໍ້ມູນອື່ນໆ"
+    return "ຂໍ້ມູນເພີ່ມເຕີມ"
 
 
 def display_label(col):
@@ -893,7 +896,7 @@ def build_section_columns(all_columns):
                     break
 
         # Put any future unknown columns into Section 5.
-        if section_title == "5. ຂໍ້ມູນອື່ນໆ":
+        if section_title == "6. ຂໍ້ມູນເພີ່ມເຕີມ":
             extra_cols = [c for c in available if c not in used]
             cols.extend(extra_cols)
             used.update(extra_cols)
@@ -1128,18 +1131,60 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
 
     st.divider()
 
-    if st.button("ທຳນາຍຄວາມສ່ຽງ", use_container_width=True):
+    unanswered_cols_now = [
+        col for col, value in user_input.items()
+        if is_unanswered(value)
+    ]
+
+    missing_submit_info_now = []
+    if is_unanswered(student_name_for_report):
+        missing_submit_info_now.append("ຊື່ນັກຮຽນ ຫຼື ລະຫັດນັກຮຽນ")
+    if not consent_alert:
+        missing_submit_info_now.append("ການຍິນຍອມໃຫ້ສົ່ງຜົນໄປຫາທີ່ປຶກສາ")
+
+    form_ready_to_submit = (
+        len(unanswered_cols_now) == 0
+        and len(missing_submit_info_now) == 0
+    )
+
+    if not form_ready_to_submit:
+        st.warning("ກະລຸນາຕອບຂໍ້ມູນໃຫ້ຄົບກ່ອນກົດສົ່ງ.")
+        with st.expander("ເບິ່ງຂໍ້ທີ່ຍັງຂາດ"):
+            missing_labels = [
+                display_label(col) for col in unanswered_cols_now
+            ] + missing_submit_info_now
+
+            if missing_labels:
+                st.write(" • " + "\n • ".join(missing_labels[:30]))
+                if len(missing_labels) > 30:
+                    st.caption(f"ຍັງມີອີກ {len(missing_labels) - 30} ຂໍ້")
+
+    submit_clicked = st.button(
+        "ທຳນາຍຄວາມສ່ຽງ",
+        use_container_width=True,
+        disabled=not form_ready_to_submit
+    )
+
+    if submit_clicked:
         unanswered_cols = [
             col for col, value in user_input.items()
             if is_unanswered(value)
         ]
 
-        if unanswered_cols:
-            st.warning("ກະລຸນາຕອບທຸກຂໍ້ກ່ອນກົດທຳນາຍ.")
-            st.caption("ຂໍ້ທີ່ຍັງບໍ່ໄດ້ຕອບ:")
-            st.write(" • " + "\n • ".join(display_label(col) for col in unanswered_cols[:20]))
-            if len(unanswered_cols) > 20:
-                st.caption(f"ຍັງມີອີກ {len(unanswered_cols) - 20} ຂໍ້")
+        missing_submit_info = []
+        if is_unanswered(student_name_for_report):
+            missing_submit_info.append("ຊື່ນັກຮຽນ ຫຼື ລະຫັດນັກຮຽນ")
+        if not consent_alert:
+            missing_submit_info.append("ການຍິນຍອມໃຫ້ສົ່ງຜົນໄປຫາທີ່ປຶກສາ")
+
+        if unanswered_cols or missing_submit_info:
+            st.warning("ກະລຸນາຕອບທຸກຂໍ້ກ່ອນກົດສົ່ງ.")
+            missing_labels = [
+                display_label(col) for col in unanswered_cols
+            ] + missing_submit_info
+            st.write(" • " + "\n • ".join(missing_labels[:30]))
+            if len(missing_labels) > 30:
+                st.caption(f"ຍັງມີອີກ {len(missing_labels) - 30} ຂໍ້")
             st.stop()
 
         input_df = pd.DataFrame([user_input])
