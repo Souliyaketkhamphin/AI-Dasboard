@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ຕ້ອງຕອບຄົບກ່ອນສົ່ງ v9"
+APP_VERSION = "ລຸ້ນ: ຜົນລະອຽດ ແລະ ຄຳແນະນຳ v10"
 
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
@@ -907,6 +907,415 @@ def build_section_columns(all_columns):
     return sections
 
 
+
+# =========================================================
+# DETAILED RESULT ANALYSIS
+# =========================================================
+
+POSITIVE_HIGH_COLUMNS = {
+    "Average grade", "Academic performance self", "Focus in class", "CGPA",
+    "Study satisfaction", "Healthy_meals_freq", "Exercise_freq", "Time_to_relax",
+    "Family support when stressed", "Talk to someone when stressed",
+    "Support_someone_to_talk", "Support_family", "Support_friends",
+    "Support_understood", "Support_trust_adult", "Life_happy",
+    "Self_confident", "Feel_calm", "Handle_problems", "Future_hope"
+}
+
+PROBLEM_CATEGORY_COLUMNS = {
+    "ສຸຂະພາບຈິດ": [
+        "Depression severity", "Anxiety severity", "Worry or tense freq",
+        "Sad or hopeless freq", "Anx_nervous", "Anx_worry_many_things",
+        "Anx_hard_to_relax", "Anx_restless", "Anx_upset_easily",
+        "Anx_something_bad", "Aep_sad_most_days", "Dep_lose_interest",
+        "Dep_tired_often", "Dep_feel_failure", "Dep_cannot_focus",
+        "Dep_slow_thinking", "Dep_hopeless", "Dep_self_harm_thoughts"
+    ],
+    "ຄວາມຄຽດ": [
+        "Stress_level_general", "Academic pressure", "Homework pressure",
+        "Homework pressure3", "Stress_schoolwork", "Stress_too_much_manage",
+        "Stress_daily_tasks", "Stress_pressure_do_well", "Stress_hard_balance"
+    ],
+    "ການຮຽນ": [
+        "Average grade", "Academic performance self", "Focus in class", "CGPA",
+        "Study satisfaction", "Study hours day"
+    ],
+    "ການນອນ": [
+        "Sleep hours night", "Sleep hours day", "Daytime_tiredness",
+        "Phone_before_sleep", "Anx_sleep_problem", "Dep_sleep_problem"
+    ],
+    "ຄອບຄົວ": [
+        "Living_with", "Family_financial_status", "Family support when stressed",
+        "Support_family"
+    ],
+    "ການຊ່ວຍເຫຼືອ": [
+        "Talk to someone when stressed", "Support_someone_to_talk",
+        "Support_friends", "Support_understood", "Support_trust_adult"
+    ],
+    "ວິຖີຊີວິດ": [
+        "Healthy_meals_freq", "Exercise_freq", "Online_time_daily",
+        "Skip_meals_freq", "Time_to_relax", "Phone_before_sleep"
+    ],
+    "ການເງິນ": [
+        "Family_financial_status", "Financial stress"
+    ],
+}
+
+CATEGORY_SIMPLE_ADVICE = {
+    "ສຸຂະພາບຈິດ": [
+        "ບອກຄູ ພໍ່ແມ່ ຫຼື ຄົນທີ່ໄວ້ໃຈໃຫ້ຮູ້.",
+        "ຢ່າຢູ່ຄົນດຽວເມື່ອຮູ້ສຶກໜັກໃຈ.",
+        "ພັກຫາຍໃຈຊ້າໆ ແລະ ຂໍຄວາມຊ່ວຍເຫຼືອ."
+    ],
+    "ຄວາມຄຽດ": [
+        "ແບ່ງວຽກໃຫຍ່ເປັນວຽກນ້ອຍ.",
+        "ພັກ 5–10 ນາທີຫຼັງຮຽນດົນ.",
+        "ຂໍໃຫ້ຄູຊ່ວຍຈັດລຳດັບວຽກ."
+    ],
+    "ການຮຽນ": [
+        "ອ່ານທົບທວນວັນລະ 20–30 ນາທີ.",
+        "ຖາມຄູເມື່ອບໍ່ເຂົ້າໃຈ.",
+        "ເລືອກບ່ອນຮຽນທີ່ງຽບ ແລະ ຫຼຸດໂທລະສັບ."
+    ],
+    "ການນອນ": [
+        "ພະຍາຍາມນອນໃຫ້ພໍທຸກຄືນ.",
+        "ຫຼຸດໂທລະສັບກ່ອນນອນ.",
+        "ຈັດເວລານອນ ແລະ ຕື່ນໃຫ້ໃກ້ຄຽງກັນ."
+    ],
+    "ຄອບຄົວ": [
+        "ລອງລົມກັບຄອບຄົວໃນເວລາທີ່ສະຫງົບ.",
+        "ບອກຄວາມຮູ້ສຶກດ້ວຍຄຳງ່າຍໆ.",
+        "ຖ້າລົມກັນຍາກ ໃຫ້ຂໍຄູ ຫຼື ທີ່ປຶກສາຊ່ວຍ."
+    ],
+    "ການຊ່ວຍເຫຼືອ": [
+        "ເລືອກຄົນ 1 ຄົນທີ່ໄວ້ໃຈແລ້ວລົມດ້ວຍ.",
+        "ຢ່າເກັບບັນຫາໄວ້ຄົນດຽວ.",
+        "ຂໍເວລາລົມກັບທີ່ປຶກສາໂຮງຮຽນ."
+    ],
+    "ວິຖີຊີວິດ": [
+        "ກິນອາຫານໃຫ້ຄົບມື້.",
+        "ຂະຫຍັບຮ່າງກາຍ ຫຼື ຍ່າງເບົາໆ.",
+        "ຈຳກັດເວລາອອນລາຍໃຫ້ພໍດີ."
+    ],
+    "ການເງິນ": [
+        "ລົມກັບຜູ້ໃຫຍ່ເມື່ອກັງວົນເລື່ອງເງິນ.",
+        "ຢ່າໂທດຕົນເອງເພາະບັນຫານີ້.",
+        "ຂໍຄຳແນະນຳຈາກຄູ ຫຼື ທີ່ປຶກສາ."
+    ],
+}
+
+
+def _number_from_value(value):
+    try:
+        if isinstance(value, (int, float, np.integer, np.floating)):
+            return float(value)
+    except Exception:
+        pass
+
+    text = str(value).strip()
+    try:
+        return float(text)
+    except Exception:
+        return None
+
+
+def _text_score(col, value):
+    """Convert one answer to a concern score from 0 to 5."""
+    canonical_col = get_canonical_column(col)
+    shown = display_option(value, canonical_col)
+    raw_text = str(value).lower()
+    shown_text = str(shown).lower()
+    joined = f"{raw_text} {shown_text}"
+
+    if canonical_col in ["Sleep hours night", "Sleep hours day"]:
+        if "7" in joined and ("8" in joined or "9" in joined):
+            return 0.5
+        if "5" in joined and "6" in joined:
+            return 2.5
+        if "0" in joined and "5" in joined:
+            return 4.0
+        if "ນ້ອຍ" in joined or "less" in joined:
+            return 4.5
+        if "ຫຼາຍ" in joined or "more" in joined:
+            return 2.5
+
+    if canonical_col == "Online_time_daily":
+        if "ນ້ອຍ" in joined or "less" in joined:
+            return 0.5
+        if "1" in joined and "3" in joined:
+            return 1.5
+        if "4" in joined and "6" in joined:
+            return 3.5
+        if "ຫຼາຍ" in joined or "more" in joined:
+            return 5.0
+
+    if canonical_col == "Phone_before_sleep":
+        if "ບໍ່" in joined or "never" in joined:
+            return 0.5
+        if "30" in joined and ("ນ້ອຍ" in joined or "less" in joined):
+            return 1.5
+        if "30" in joined and "60" in joined:
+            return 3.0
+        if "ຫຼາຍ" in joined or "more" in joined:
+            return 5.0
+
+    if canonical_col in ["Healthy_meals_freq", "Exercise_freq", "Time_to_relax"]:
+        if "ທຸກ" in joined or "every" in joined or "ມີ ທຸກ" in joined:
+            return 0.5
+        if "3" in joined and "5" in joined:
+            return 1.5
+        if "1" in joined and "2" in joined:
+            return 3.5
+        if "ບໍ່" in joined or "never" in joined or "rare" in joined:
+            return 5.0
+
+    if canonical_col in ["Average grade", "CGPA"]:
+        if "80" in joined or "8–10" in joined or "8-10" in joined:
+            return 0.5
+        if "60" in joined or "7–8" in joined or "7-8" in joined:
+            return 1.5
+        if "40" in joined or "5–7" in joined or "5-7" in joined:
+            return 3.0
+        if "below" in joined or "ຕ່ຳ" in joined or "0–5" in joined or "0-5" in joined:
+            return 5.0
+
+    if canonical_col == "Academic performance self":
+        if "ດີຫຼາຍ" in joined or "very good" in joined:
+            return 0.5
+        if "ດີ" in joined or "good" in joined:
+            return 1.5
+        if "ປານ" in joined or "average" in joined:
+            return 2.5
+        if "ຕ່ຳ" in joined or "below" in joined:
+            return 4.0
+        if "ອ່ອນ" in joined or "poor" in joined:
+            return 5.0
+
+    if canonical_col == "Focus in class":
+        if "ງ່າຍຫຼາຍ" in joined or "very easy" in joined:
+            return 0.5
+        if "ງ່າຍ" in joined or "easy" in joined:
+            return 1.5
+        if "ຍາກຫຼາຍ" in joined or "very hard" in joined:
+            return 5.0
+        if "ຍາກ" in joined or "hard" in joined:
+            return 4.0
+
+    if canonical_col in ["Family_financial_status", "Financial stress"]:
+        if "ດີ" in joined or "good" in joined:
+            return 0.5
+        if "ພໍ" in joined or "fair" in joined:
+            return 2.0
+        if "ອ່ອນຫຼາຍ" in joined or "very poor" in joined:
+            return 5.0
+        if "ອ່ອນ" in joined or "poor" in joined:
+            return 4.0
+
+    if canonical_col == "Living_with":
+        if "ພໍ່ແມ່ທັງສອງ" in joined or "both" in joined:
+            return 0.5
+        if "ພໍ່" in joined or "ແມ່" in joined or "one parent" in joined:
+            return 2.0
+        if "ຍາດ" in joined or "relative" in joined:
+            return 2.5
+        if "ຄົນດຽວ" in joined or "alone" in joined:
+            return 4.5
+
+    # General text scale.
+    if any(t in joined for t in ["ສູງຫຼາຍ", "ຮຸນແຮງ", "very high", "extreme", "almost every day"]):
+        return 5.0
+    if any(t in joined for t in ["ສູງ", "ເລື້ອຍ", "high", "often"]):
+        return 4.0
+    if any(t in joined for t in ["ປານ", "ບາງ", "moderate", "sometimes", "fair"]):
+        return 3.0
+    if any(t in joined for t in ["ຕ່ຳຫຼາຍ", "very low"]):
+        return 1.0
+    if any(t in joined for t in ["ຕ່ຳ", "low", "rarely", "ບໍ່ຄ່ອຍ"]):
+        return 1.5
+    if any(t in joined for t in ["ບໍ່ມີ", "ບໍ່ເຄີຍ", "none", "never", "no"]):
+        return 0.5
+    if any(t in joined for t in ["ດີຫຼາຍ", "excellent", "very good", "always"]):
+        return 0.5 if canonical_col in POSITIVE_HIGH_COLUMNS else 4.5
+    if any(t in joined for t in ["ດີ", "good", "yes"]):
+        return 1.0 if canonical_col in POSITIVE_HIGH_COLUMNS else 3.5
+
+    return 2.5
+
+
+def concern_score(col, value):
+    """Return concern score from 0 to 5. Higher means more concern."""
+    if is_unanswered(value):
+        return None
+
+    canonical_col = get_canonical_column(col)
+    number = _number_from_value(value)
+
+    if number is not None:
+        if number <= 0:
+            return None
+        number = max(1.0, min(5.0, float(number)))
+        if canonical_col in POSITIVE_HIGH_COLUMNS:
+            return 6.0 - number
+        return number
+
+    return _text_score(canonical_col, value)
+
+
+def column_problem_category(col):
+    canonical_col = get_canonical_column(col)
+    for category, cols in PROBLEM_CATEGORY_COLUMNS.items():
+        if canonical_col in cols:
+            return category
+
+    text = normalize_col_key(canonical_col)
+    if "stress" in text or "pressure" in text:
+        return "ຄວາມຄຽດ"
+    if "sleep" in text or "tired" in text:
+        return "ການນອນ"
+    if "academic" in text or "study" in text or "grade" in text or "focus" in text:
+        return "ການຮຽນ"
+    if "family" in text or "living" in text:
+        return "ຄອບຄົວ"
+    if "support" in text or "friend" in text or "adult" in text or "talk" in text:
+        return "ການຊ່ວຍເຫຼືອ"
+    if "meal" in text or "exercise" in text or "online" in text or "phone" in text:
+        return "ວິຖີຊີວິດ"
+    if "financial" in text or "money" in text:
+        return "ການເງິນ"
+    if "anx" in text or "dep" in text or "sad" in text or "hopeless" in text or "worry" in text:
+        return "ສຸຂະພາບຈິດ"
+    return "ວິຖີຊີວິດ"
+
+
+def build_detail_analysis(input_dict, risk, class_probabilities, confidence, student_name):
+    category_scores = {category: [] for category in PROBLEM_CATEGORY_COLUMNS}
+    high_items = []
+
+    for col, value in input_dict.items():
+        score = concern_score(col, value)
+        if score is None:
+            continue
+
+        category = column_problem_category(col)
+        category_scores.setdefault(category, []).append(score)
+
+        if score >= 4:
+            high_items.append({
+                "ຂໍ້ທີ່ຄວນເບິ່ງແຍງ": display_label(col),
+                "ຄຳຕອບ": display_option(value, col),
+                "ລະດັບກັງວົນ": round(score, 1),
+                "ກຸ່ມບັນຫາ": category,
+            })
+
+    rows = []
+    for category, scores in category_scores.items():
+        avg_score = float(np.mean(scores)) if scores else 0.0
+        percent = round((avg_score / 5.0) * 100.0, 1)
+        rows.append({
+            "ກຸ່ມບັນຫາ": category,
+            "ຄະແນນກັງວົນ (%)": percent,
+        })
+
+    concern_df = pd.DataFrame(rows).sort_values(
+        "ຄະແນນກັງວົນ (%)", ascending=False
+    )
+
+    top_categories = concern_df.head(3)["ກຸ່ມບັນຫາ"].tolist()
+    high_items_df = pd.DataFrame(high_items).sort_values(
+        "ລະດັບກັງວົນ", ascending=False
+    ) if high_items else pd.DataFrame(columns=[
+        "ຂໍ້ທີ່ຄວນເບິ່ງແຍງ", "ຄຳຕອບ", "ລະດັບກັງວົນ", "ກຸ່ມບັນຫາ"
+    ])
+
+    return {
+        "student_name": student_name,
+        "risk": risk,
+        "risk_lao": risk_lao_map.get(risk, risk),
+        "class_probabilities": class_probabilities,
+        "confidence": confidence,
+        "concern_df": concern_df,
+        "high_items_df": high_items_df,
+        "top_categories": top_categories,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+def detail_summary_text(detail):
+    risk_lao = detail.get("risk_lao", "ບໍ່ລະບຸ")
+    top_categories = detail.get("top_categories", [])
+    top_text = ", ".join(top_categories) if top_categories else "ບໍ່ພົບຂໍ້ກັງວົນສູງ"
+
+    return (
+        f"ຜົນລວມສະແດງວ່າ ລະດັບຄວາມສ່ຽງແມ່ນ {risk_lao}. "
+        f"ກຸ່ມທີ່ຄວນເບິ່ງແຍງກ່ອນແມ່ນ {top_text}. "
+        "ຜົນນີ້ໃຊ້ເພື່ອຊ່ວຍຄັດກອງເທົ່ານັ້ນ. "
+        "ບໍ່ແມ່ນການວິນິດໄສທາງການແພດ."
+    )
+
+
+def show_detail_result_page():
+    st.header("ຜົນລະອຽດ ແລະ ຂໍ້ຄວນລະວັງ")
+
+    detail = st.session_state.get("latest_detail_result")
+    if not detail:
+        st.info(
+            "ຍັງບໍ່ມີຜົນລະອຽດ. "
+            "ກະລຸນາໄປໜ້າ ທຳນາຍຄວາມສ່ຽງ ແລ້ວກົດທຳນາຍກ່ອນ."
+        )
+        return
+
+    st.caption(f"ອັບເດດຫຼ້າສຸດ: {detail.get('timestamp', '')}")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("ລະດັບຄວາມສ່ຽງ", detail.get("risk_lao", ""))
+    col2.metric("ຄວາມໝັ້ນໃຈຂອງໂມເດວ", f"{detail.get('confidence', 0):.2f}%")
+    col3.metric("ຊື່ ຫຼື ລະຫັດ", detail.get("student_name", ""))
+
+    st.subheader("ກຸ່ມບັນຫາທີ່ຄວນເບິ່ງແຍງ")
+    st.write(detail_summary_text(detail))
+
+    concern_df = detail.get("concern_df", pd.DataFrame())
+    if not concern_df.empty:
+        st.bar_chart(
+            data=concern_df,
+            x="ກຸ່ມບັນຫາ",
+            y="ຄະແນນກັງວົນ (%)"
+        )
+        st.dataframe(concern_df, use_container_width=True, hide_index=True)
+
+    st.subheader("ຂໍ້ທີ່ຄວນໃສ່ໃຈກ່ອນ")
+    high_items_df = detail.get("high_items_df", pd.DataFrame())
+    if high_items_df.empty:
+        st.success("ບໍ່ພົບຄຳຕອບທີ່ຢູ່ໃນລະດັບກັງວົນສູງ.")
+    else:
+        st.dataframe(high_items_df.head(10), use_container_width=True, hide_index=True)
+
+    st.subheader("ຄຳແນະນຳໃຫ້ລະວັງກ່ອນ")
+    top_categories = detail.get("top_categories", [])
+    if not top_categories:
+        st.write("ຮັກສາການນອນ ການກິນ ແລະ ການຮຽນໃຫ້ສົມດຸນ.")
+    else:
+        for category in top_categories:
+            st.markdown(f"#### {category}")
+            for advice in CATEGORY_SIMPLE_ADVICE.get(category, []):
+                st.write(f"• {advice}")
+
+    if detail.get("risk") == "Severe":
+        st.error(
+            "ຖ້າຮູ້ສຶກຢາກທຳຮ້າຍຕົນເອງ ຫຼື ບໍ່ປອດໄພ, "
+            "ໃຫ້ບອກຄູ ພໍ່ແມ່ ຫຼື ຄົນໃກ້ຕົວທັນທີ. "
+            "ຢ່າຢູ່ຄົນດຽວ."
+        )
+    else:
+        st.info(
+            "ຖ້າອາການໜັກຂຶ້ນ ຫຼື ຮູ້ສຶກບໍ່ປອດໄພ, "
+            "ໃຫ້ບອກຜູ້ໃຫຍ່ທີ່ໄວ້ໃຈທັນທີ."
+        )
+
+    st.caption(
+        "ການວິເຄາະນີ້ອີງຈາກຄຳຕອບໃນແບບຟອມ. "
+        "ມັນຊ່ວຍຊີ້ຈຸດທີ່ຄວນເບິ່ງແຍງ, ແຕ່ບໍ່ແທນຄຳແນະນຳຈາກຜູ້ຊ່ຽວຊານ."
+    )
+
 # =========================================================
 # SIDEBAR
 # =========================================================
@@ -921,6 +1330,7 @@ page = st.sidebar.radio(
         "ໜ້າຫຼັກ",
         "ຜົນຂອງໂມເດວ",
         "ທຳນາຍຄວາມສ່ຽງ",
+        "ຜົນລະອຽດ",
         "ກ່ຽວກັບ"
     ]
 )
@@ -1264,6 +1674,20 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
         st.subheader("ສະຫຼຸບຜົນ")
         st.write(conclusion)
 
+        detail_result = build_detail_analysis(
+            user_input,
+            risk,
+            class_probabilities,
+            confidence,
+            student_name_for_report
+        )
+        st.session_state["latest_detail_result"] = detail_result
+
+        st.info(
+            "ຜົນລະອຽດຖືກກຽມໄວ້ແລ້ວ. "
+            "ໄປທີ່ໜ້າ ຜົນລະອຽດ ເພື່ອເບິ່ງກຸ່ມບັນຫາ ແລະ ຄຳແນະນຳ."
+        )
+
         st.caption(
             "ຜົນນີ້ເປັນການຄັດກອງເບື້ອງຕົ້ນ. "
             "ຖ້າຮູ້ສຶກບໍ່ດີ ຫຼື ບໍ່ປອດໄພ, ໃຫ້ບອກຄູ ພໍ່ແມ່ ຫຼື ຄົນທີ່ໄວ້ໃຈທັນທີ."
@@ -1314,6 +1738,14 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
                 "ຜົນຄວາມສ່ຽງຕ່ຳ. "
                 "ບໍ່ມີການສົ່ງອີເມວອັດຕະໂນມັດ."
             )
+
+
+# =========================================================
+# DETAILED RESULT PAGE
+# =========================================================
+
+elif page == "ຜົນລະອຽດ":
+    show_detail_result_page()
 
 
 # =========================================================
