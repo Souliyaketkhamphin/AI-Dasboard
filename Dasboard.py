@@ -114,12 +114,30 @@ st.markdown(
         margin-bottom: 25px;
     }
 
-    .main-title, .sub-text, h1, h2, h3, p, div, label, span, input {
+    .main-title, .sub-text, h1, h2, h3, p, div, label, input, textarea {
         font-family: 'Phetsarath OT', 'Times New Roman', serif !important;
     }
 
-    [data-testid="stSidebar"] * {
+    [data-testid="stSidebar"] div,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] input,
+    [data-testid="stSidebar"] textarea {
         font-family: 'Phetsarath OT', 'Times New Roman', serif !important;
+    }
+
+    span[data-testid="stIconMaterial"],
+    span[class*="material-symbols"],
+    [class*="material-symbols"] {
+        font-family: 'Material Symbols Rounded' !important;
+        font-weight: normal !important;
+        font-style: normal !important;
+        line-height: 1 !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
+        white-space: nowrap !important;
+        word-wrap: normal !important;
+        direction: ltr !important;
     }
     </style>
     """,
@@ -373,7 +391,8 @@ def display_label(col):
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("ເມນູ")
+st.sidebar.title("🏠 Home")
+st.sidebar.caption("ເມນູ")
 
 page = st.sidebar.radio(
     "ເລືອກໜ້າ",
