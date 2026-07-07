@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ຫົວຂໍ້ລວມໃໝ່ v15"
+APP_VERSION = "ລຸ້ນ: ປຸ່ມເລືອກໃຫຍ່ ແລະ ມີສີ v17"
 
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
@@ -222,7 +222,261 @@ st.markdown(
         margin-top: 8px;
     }
 
-    span[data-testid="stIconMaterial"],
+
+
+    /* ===== Mobile and tablet support ===== */
+    #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], .stDeployButton {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+    }
+
+    .block-container {
+        padding-top: 1.2rem !important;
+        padding-bottom: 4.5rem !important;
+        max-width: 1180px !important;
+    }
+
+    .stApp,
+    .stApp p,
+    .stApp div,
+    .stApp label,
+    .stApp span,
+    .stApp h1,
+    .stApp h2,
+    .stApp h3,
+    .stApp h4,
+    .stApp li {
+        color: #243047 !important;
+        -webkit-text-fill-color: #243047 !important;
+    }
+
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="input"] > div,
+    input,
+    textarea {
+        background-color: #ffffff !important;
+        color: #243047 !important;
+        -webkit-text-fill-color: #243047 !important;
+        border: 1px solid #d8e6f8 !important;
+        border-radius: 16px !important;
+        min-height: 48px !important;
+        box-shadow: 0 3px 10px rgba(120, 145, 190, 0.07) !important;
+    }
+
+    div[data-baseweb="select"] *,
+    div[data-baseweb="input"] *,
+    div[data-baseweb="popover"] *,
+    [role="listbox"] *,
+    [role="option"] * {
+        color: #243047 !important;
+        -webkit-text-fill-color: #243047 !important;
+    }
+
+    [role="listbox"],
+    [data-baseweb="popover"] div {
+        background-color: #ffffff !important;
+    }
+
+    [role="option"] {
+        background-color: #ffffff !important;
+        color: #243047 !important;
+        min-height: 42px !important;
+        font-size: 16px !important;
+    }
+
+    [role="option"]:hover {
+        background-color: #eaf5ff !important;
+    }
+
+    button[kind="primary"],
+    button[kind="secondary"],
+    .stButton button {
+        min-height: 48px !important;
+        border-radius: 16px !important;
+        font-size: 17px !important;
+        font-weight: 700 !important;
+    }
+
+    [data-testid="stRadio"] label,
+    [data-testid="stCheckbox"] label {
+        background: rgba(255,255,255,0.75) !important;
+        border-radius: 14px !important;
+        padding: 6px 8px !important;
+        margin-bottom: 4px !important;
+    }
+
+
+
+    /* ===== Big colorful form-type buttons ===== */
+    .st-key-form_mode_choice [data-testid="stRadio"] > label {
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        color: #22304a !important;
+        margin-bottom: 10px !important;
+    }
+
+    .st-key-form_mode_choice [role="radiogroup"] {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 14px !important;
+        margin-top: 8px !important;
+        margin-bottom: 14px !important;
+    }
+
+    .st-key-form_mode_choice [role="radiogroup"] label {
+        min-height: 74px !important;
+        border-radius: 22px !important;
+        padding: 14px 16px !important;
+        border: 2px solid #d8e8ff !important;
+        background: linear-gradient(135deg, #ffffff 0%, #eef8ff 100%) !important;
+        box-shadow: 0 8px 20px rgba(94, 139, 200, 0.14) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 10px !important;
+        cursor: pointer !important;
+        transition: all 0.18s ease-in-out !important;
+    }
+
+    .st-key-form_mode_choice [role="radiogroup"] label:nth-child(1) {
+        background: linear-gradient(135deg, #e6f2ff 0%, #dff7ff 100%) !important;
+        border-color: #7fc4ff !important;
+    }
+
+    .st-key-form_mode_choice [role="radiogroup"] label:nth-child(2) {
+        background: linear-gradient(135deg, #fff0d6 0%, #ffe5f1 100%) !important;
+        border-color: #ffb76b !important;
+    }
+
+    .st-key-form_mode_choice [role="radiogroup"] label:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 10px 24px rgba(94, 139, 200, 0.22) !important;
+    }
+
+    .st-key-form_mode_choice [role="radiogroup"] label:has(input:checked) {
+        border: 3px solid #ff4b5c !important;
+        box-shadow: 0 0 0 4px rgba(255, 75, 92, 0.14), 0 12px 24px rgba(255, 75, 92, 0.18) !important;
+        transform: scale(1.02) !important;
+    }
+
+    .st-key-form_mode_choice [role="radiogroup"] label p,
+    .st-key-form_mode_choice [role="radiogroup"] label span,
+    .st-key-form_mode_choice [role="radiogroup"] label div {
+        font-size: 19px !important;
+        font-weight: 800 !important;
+        color: #20314f !important;
+        -webkit-text-fill-color: #20314f !important;
+        line-height: 1.35 !important;
+        text-align: center !important;
+    }
+
+    .st-key-form_mode_choice [role="radiogroup"] label:nth-child(1) p::before,
+    .st-key-form_mode_choice [role="radiogroup"] label:nth-child(1) span::before {
+        content: "🎒 ";
+    }
+
+    .st-key-form_mode_choice [role="radiogroup"] label:nth-child(2) p::before,
+    .st-key-form_mode_choice [role="radiogroup"] label:nth-child(2) span::before {
+        content: "👥 ";
+    }
+
+    [data-testid="stSlider"] * {
+        color: #243047 !important;
+        -webkit-text-fill-color: #243047 !important;
+    }
+
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            padding-top: 0.8rem !important;
+            max-width: 100% !important;
+        }
+
+        .main-title {
+            font-size: 23px !important;
+            line-height: 1.45 !important;
+            margin-bottom: 8px !important;
+        }
+
+        .sub-text {
+            font-size: 15px !important;
+            line-height: 1.6 !important;
+            margin-bottom: 16px !important;
+        }
+
+        h1 { font-size: 25px !important; line-height: 1.45 !important; }
+        h2 { font-size: 22px !important; line-height: 1.45 !important; }
+        h3 { font-size: 19px !important; line-height: 1.5 !important; }
+        p, label, div, span { font-size: 16px !important; line-height: 1.65 !important; }
+
+        .hero-box,
+        .friendly-card,
+        .tip-box,
+        .danger-box {
+            padding: 14px 15px !important;
+            border-radius: 18px !important;
+            margin-bottom: 12px !important;
+        }
+
+        [data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap !important;
+            gap: 0.8rem !important;
+        }
+
+        [data-testid="column"] {
+            width: 100% !important;
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+        }
+
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="input"] > div,
+        input,
+        textarea {
+            min-height: 52px !important;
+            font-size: 17px !important;
+            width: 100% !important;
+        }
+
+
+
+        .st-key-form_mode_choice [role="radiogroup"] {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+        }
+
+        .st-key-form_mode_choice [role="radiogroup"] label {
+            min-height: 66px !important;
+            padding: 12px 14px !important;
+            border-radius: 20px !important;
+        }
+
+        .st-key-form_mode_choice [role="radiogroup"] label p,
+        .st-key-form_mode_choice [role="radiogroup"] label span,
+        .st-key-form_mode_choice [role="radiogroup"] label div {
+            font-size: 18px !important;
+        }
+
+        [data-testid="stSidebar"] {
+            min-width: 82vw !important;
+            max-width: 82vw !important;
+            background: #f4fbff !important;
+        }
+
+        [data-testid="stSidebar"] * {
+            color: #243047 !important;
+            -webkit-text-fill-color: #243047 !important;
+        }
+
+        .stDataFrame,
+        [data-testid="stTable"] {
+            overflow-x: auto !important;
+        }
+    }
+
+        span[data-testid="stIconMaterial"],
     span[class*="material-symbols"],
     [class*="material-symbols"] {
         font-family: 'Material Symbols Rounded' !important;
@@ -1646,20 +1900,23 @@ def show_detail_result_page():
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🏠 ບ້ານຂອງເຮົາ")
-st.sidebar.caption("ເມນູ")
-st.sidebar.caption(APP_VERSION)
-st.sidebar.markdown("<div style='font-size:13px;color:#6b7a90;'>ແອັບນີ້ອອກແບບໃຫ້ອ່ານງ່າຍ ແລະ ໃຊ້ງ່າຍສຳລັບເດັກນ້ອຍ ແລະ ໄວລຸ້ນ</div>", unsafe_allow_html=True)
+PAGES = [
+    "ໜ້າຫຼັກ",
+    "ຜົນຂອງໂມເດວ",
+    "ທຳນາຍຄວາມສ່ຽງ",
+    "ຜົນລະອຽດ",
+    "ກ່ຽວກັບ"
+]
 
-page = st.sidebar.radio(
-    "ເລືອກໜ້າ",
-    [
-        "ໜ້າຫຼັກ",
-        "ຜົນຂອງໂມເດວ",
-        "ທຳນາຍຄວາມສ່ຽງ",
-        "ຜົນລະອຽດ",
-        "ກ່ຽວກັບ"
-    ]
+st.sidebar.title("🏠 ເມນູ")
+st.sidebar.caption(APP_VERSION)
+st.sidebar.info("ໂທລະສັບ: ເລືອກໜ້າຈາກກ່ອງດ້ານລຸ່ມ. ຫຼັງເລືອກແລ້ວ ປິດເມນູດ້ານຂ້າງໄດ້.")
+
+page = st.selectbox(
+    "📱 ເລືອກໜ້າ",
+    PAGES,
+    index=0,
+    key="mobile_page_selector"
 )
 
 
@@ -1806,6 +2063,16 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
                 complete[col] = choose_neutral_category(col)
         return complete
 
+    st.markdown(
+        """
+        <div class='friendly-card' style='padding:14px 16px;'>
+            <div style='font-size:18px;font-weight:800;color:#22304a;'>🌟 ເລືອກແບບຟອມກ່ອນ</div>
+            <div style='font-size:15px;color:#516178;margin-top:4px;'>ກົດເລືອກວ່າຜູ້ຕອບແມ່ນນັກຮຽນ ຫຼື ບຸກຄົນທົ່ວໄປ</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     form_choice = st.radio(
         "ເລືອກປະເພດແບບຟອມ",
         ["ນັກຮຽນ", "ບຸກຄົນທົ່ວໄປ"],
@@ -1894,11 +2161,9 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
             if len(cols) == 0:
                 st.caption("ບໍ່ພົບຊ່ອງຂໍ້ມູນ")
             else:
-                col_a, col_b = st.columns(2)
-
-                for i, col in enumerate(cols):
-                    with col_a if i % 2 == 0 else col_b:
-                        user_input[col] = input_field(col)
+                for col in cols:
+                    user_input[col] = input_field(col)
+                    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
     def format_form_answers_lao(input_dict):
         lines = []
