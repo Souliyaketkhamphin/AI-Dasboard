@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import os
+from pathlib import Path
 import requests
 from datetime import datetime
 
@@ -10,13 +10,22 @@ from datetime import datetime
 # N8N COUNSELOR ALERT SETTINGS
 # =========================================================
 
-N8N_WEBHOOK_URL = "https://souliya.app.n8n.cloud/webhook/depression-alert"
-COUNSELOR_EMAIL = "Souliyakkp@gmail.com"
+# Keep private data in Streamlit Secrets, not in public GitHub code.
+# Streamlit Cloud: Manage app → Settings → Secrets.
+N8N_WEBHOOK_URL = st.secrets.get("N8N_WEBHOOK_URL", "")
+COUNSELOR_EMAIL = st.secrets.get("COUNSELOR_EMAIL", "")
 
 AUTO_COUNSELOR_LEVELS = ["Moderate", "Severe"]
 
 
 def send_report_to_n8n(report_data):
+    if not N8N_WEBHOOK_URL:
+        st.warning(
+            "ຍັງບໍ່ໄດ້ຕັ້ງ N8N_WEBHOOK_URL ໃນ Streamlit Secrets. "
+            "ການທຳນາຍຍັງໃຊ້ໄດ້, ແຕ່ການສົ່ງໄປ n8n ຈະບໍ່ເຮັດວຽກ."
+        )
+        return False
+
     try:
         response = requests.post(
             N8N_WEBHOOK_URL,
@@ -122,13 +131,35 @@ st.markdown(
 # LOAD MODEL
 # =========================================================
 
+BASE_DIR = Path(__file__).resolve().parent
+
+MODEL_CANDIDATES = [
+    BASE_DIR / "depression_model_package.pkl",
+    BASE_DIR / "saved_model" / "depression_model_package.pkl",
+]
+
+
+def find_model_path():
+    for path in MODEL_CANDIDATES:
+        if path.exists():
+            return path
+
+    st.error(
+        "ບໍ່ພົບໄຟລ໌ໂມເດວ. "
+        "ກະລຸນາໃສ່ depression_model_package.pkl "
+        "ໃນ main folder ຫຼື saved_model folder."
+    )
+    st.write("Checked paths:")
+    for path in MODEL_CANDIDATES:
+        st.code(str(path))
+    st.stop()
+
+
 @st.cache_resource
 def load_model_package():
-    model_path = "saved_model/depression_model_package.pkl"
+    model_path = find_model_path()
     return joblib.load(model_path)
 
-
-model_path = "saved_model/depression_model_package.pkl"
 
 st.markdown(
     """
@@ -147,14 +178,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-if not os.path.exists(model_path):
-    st.error(
-        "ບໍ່ພົບໄຟລ໌ໂມເດວ. "
-        "ກະລຸນາໃສ່ໄຟລ໌ depression_model_package.pkl "
-        "ໃນໂຟນເດີ saved_model."
-    )
-    st.stop()
 
 model_package = load_model_package()
 
