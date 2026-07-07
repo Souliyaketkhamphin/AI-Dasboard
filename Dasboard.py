@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ປຸ່ມເລືອກໃຫຍ່ ແລະ ມີສີ v17"
+APP_VERSION = "ລຸ້ນ: ກົດທຳນາຍແລ້ວໄປລາຍງານ v19"
 
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
@@ -1174,6 +1174,13 @@ def display_option(value, col=None):
     key = normalize_text(value_text)
     canonical_col = get_canonical_column(col) if col else col
 
+    # Fix gender first. Do not let "female" become "male".
+    if canonical_col == "Gender":
+        if "female" in key or "ຍິງ" in key:
+            return "ຍິງ"
+        if "male" in key or "ຊາຍ" in key:
+            return "ຊາຍ"
+
     # Use real choice order if the saved value is Option 1, Option 2, etc.
     num = option_number(value_text)
     if canonical_col in ORDINAL_CHOICE_DISPLAY_MAP and num:
@@ -1181,12 +1188,22 @@ def display_option(value, col=None):
         if 1 <= num <= len(choices):
             return choices[num - 1]
 
-    # First use column-specific choices from the real Google Form.
+    # First use exact column-specific choices from the real Google Form.
     if canonical_col in FORM_CHOICE_DISPLAY_MAP:
-        for raw_key, shown_text in FORM_CHOICE_DISPLAY_MAP[canonical_col].items():
+        form_map = FORM_CHOICE_DISPLAY_MAP[canonical_col]
+
+        for raw_key, shown_text in form_map.items():
             if normalize_text(raw_key) == key:
                 return shown_text
-            if normalize_text(raw_key) in key:
+
+        # Then use partial matching. Longer keys go first to avoid wrong matches.
+        for raw_key, shown_text in sorted(
+            form_map.items(),
+            key=lambda item: len(normalize_text(item[0])),
+            reverse=True
+        ):
+            raw_norm = normalize_text(raw_key)
+            if raw_norm and raw_norm in key:
                 return shown_text
 
     if key in option_lao_map:
@@ -1877,20 +1894,31 @@ def render_detail_result(detail, form_mode):
 
 def show_detail_result_page():
     soft_intro(
-        "ຜົນລະອຽດ",
-        "ໜ້ານີ້ແຍກຜົນຂອງນັກຮຽນ ແລະ ຄົນທົ່ວໄປອອກຈາກກັນ. ກົດແຖບທີ່ຕ້ອງການເບິ່ງ.",
-        "🗂️"
+        "ລາຍງານຜົນລະອຽດ",
+        "ຫຼັງຈາກກົດທຳນາຍ ລະບົບຈະພາມາໜ້ານີ້ເອງ. ເລືອກປະເພດລາຍງານໄດ້ທີ່ນີ້.",
+        "📋"
     )
 
-    tab_student, tab_general = st.tabs(["🎒 ຜົນນັກຮຽນ", "👥 ຜົນຄົນທົ່ວໄປ"])
+    latest_mode = st.session_state.get("detail_mode_to_show", "student")
+    report_options = ["🎒 ລາຍງານນັກຮຽນ", "👥 ລາຍງານຄົນທົ່ວໄປ"]
+    default_index = 1 if latest_mode == "general" else 0
 
-    with tab_student:
+    selected_report = st.radio(
+        "ເລືອກລາຍງານ",
+        report_options,
+        index=default_index,
+        horizontal=True,
+        key=f"detail_report_mode_{latest_mode}"
+    )
+
+    st.divider()
+
+    if selected_report.startswith("🎒"):
         render_detail_result(
             st.session_state.get("latest_student_detail_result"),
             "student"
         )
-
-    with tab_general:
+    else:
         render_detail_result(
             st.session_state.get("latest_general_detail_result"),
             "general"
@@ -1904,7 +1932,7 @@ PAGES = [
     "ໜ້າຫຼັກ",
     "ຜົນຂອງໂມເດວ",
     "ທຳນາຍຄວາມສ່ຽງ",
-    "ຜົນລະອຽດ",
+    "ລາຍງານຜົນລະອຽດ",
     "ກ່ຽວກັບ"
 ]
 
@@ -1912,12 +1940,26 @@ st.sidebar.title("🏠 ເມນູ")
 st.sidebar.caption(APP_VERSION)
 st.sidebar.info("ໂທລະສັບ: ເລືອກໜ້າຈາກກ່ອງດ້ານລຸ່ມ. ຫຼັງເລືອກແລ້ວ ປິດເມນູດ້ານຂ້າງໄດ້.")
 
-page = st.selectbox(
+if st.session_state.get("mobile_page_selector") == "ຜົນລະອຽດ":
+    st.session_state["mobile_page_selector"] = "ລາຍງານຜົນລະອຽດ"
+
+if "forced_page" not in st.session_state:
+    st.session_state["forced_page"] = None
+
+
+def clear_forced_page():
+    st.session_state["forced_page"] = None
+
+
+selected_page = st.selectbox(
     "📱 ເລືອກໜ້າ",
     PAGES,
     index=0,
-    key="mobile_page_selector"
+    key="mobile_page_selector",
+    on_change=clear_forced_page
 )
+
+page = st.session_state.get("forced_page") or selected_page
 
 
 # =========================================================
@@ -2350,8 +2392,8 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
         st.session_state["latest_detail_result"] = detail_result
 
         st.info(
-            "ຜົນລະອຽດຖືກກຽມໄວ້ແລ້ວ. "
-            f"ໄປທີ່ໜ້າ ຜົນລະອຽດ ແລ້ວເລືອກແຖບ {result_tab_name}."
+            "ລາຍງານຜົນລະອຽດຖືກກຽມໄວ້ແລ້ວ. "
+            "ກຳລັງເປີດໜ້າ ລາຍງານຜົນລະອຽດ ໃຫ້ອັດຕະໂນມັດ."
         )
 
         st.caption(
@@ -2406,12 +2448,17 @@ elif page == "ທຳນາຍຄວາມສ່ຽງ":
                 "ບໍ່ມີການສົ່ງອີເມວອັດຕະໂນມັດ."
             )
 
+        st.session_state["detail_mode_to_show"] = form_mode
+        st.session_state["forced_page"] = "ລາຍງານຜົນລະອຽດ"
+        st.success("ກຳລັງເປີດໜ້າ ລາຍງານຜົນລະອຽດ ໃຫ້ເຈົ້າ...")
+        st.rerun()
+
 
 # =========================================================
 # DETAILED RESULT PAGE
 # =========================================================
 
-elif page == "ຜົນລະອຽດ":
+elif page in ["ລາຍງານຜົນລະອຽດ", "ຜົນລະອຽດ"]:
     show_detail_result_page()
 
 
