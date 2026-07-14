@@ -115,14 +115,24 @@ st.markdown(
     .main-title {
         font-size: 34px;
         font-weight: 700;
-        margin-bottom: 10px;
+        margin-top: 18px;
+        margin-bottom: 14px;
+        padding-top: 8px;
         color: #22304a;
+        line-height: 1.45;
+        overflow: visible !important;
+        white-space: normal !important;
     }
 
     .sub-text {
         font-size: 18px;
         margin-bottom: 25px;
         color: #394b63;
+        line-height: 1.65;
+    }
+
+    .mobile-safe-top-space {
+        height: 18px;
     }
 
     .main-title, .sub-text, h1, h2, h3, p, div, label, input, textarea {
@@ -261,9 +271,18 @@ st.markdown(
     }
 
     .block-container {
-        padding-top: 1.2rem !important;
+        padding-top: 4.2rem !important;
         padding-bottom: 4.5rem !important;
         max-width: 1180px !important;
+        overflow: visible !important;
+    }
+
+    section.main > div {
+        padding-top: 1.2rem !important;
+    }
+
+    [data-testid="stAppViewContainer"] > .main {
+        overflow: visible !important;
     }
 
     .stApp,
@@ -438,14 +457,19 @@ st.markdown(
         .block-container {
             padding-left: 0.75rem !important;
             padding-right: 0.75rem !important;
-            padding-top: 0.8rem !important;
+            padding-top: 2.8rem !important;
             max-width: 100% !important;
+            overflow: visible !important;
         }
 
         .main-title {
-            font-size: 23px !important;
-            line-height: 1.45 !important;
-            margin-bottom: 8px !important;
+            font-size: 22px !important;
+            line-height: 1.55 !important;
+            margin-top: 16px !important;
+            margin-bottom: 10px !important;
+            padding-top: 10px !important;
+            overflow: visible !important;
+            white-space: normal !important;
         }
 
         .sub-text {
@@ -574,6 +598,8 @@ def load_model_package():
     model_path = find_model_path()
     return joblib.load(model_path)
 
+
+st.markdown("<div class='mobile-safe-top-space' style='height:18px;'></div>", unsafe_allow_html=True)
 
 st.markdown(
     """
