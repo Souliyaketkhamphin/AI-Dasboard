@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-APP_VERSION = "ລຸ້ນ: ກົດທຳນາຍແລ້ວໄປລາຍງານ v19"
+APP_VERSION = "ລຸ້ນ: ເມນູຂ້າງອ່ານງ່າຍ v20"
 
 # =========================================================
 # N8N COUNSELOR ALERT SETTINGS
@@ -139,6 +139,35 @@ st.markdown(
     [data-testid="stSidebar"] input,
     [data-testid="stSidebar"] textarea {
         font-family: 'Phetsarath OT', 'Times New Roman', serif !important;
+        color: #243047 !important;
+        -webkit-text-fill-color: #243047 !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] {
+        background: rgba(255,255,255,0.88) !important;
+        border: 1px solid #d8e6f8 !important;
+        border-radius: 18px !important;
+        padding: 10px 10px 12px 10px !important;
+        margin-top: 10px !important;
+        box-shadow: 0 8px 18px rgba(91, 124, 180, 0.10) !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] label {
+        font-size: 17px !important;
+        font-weight: 800 !important;
+        color: #22304a !important;
+        -webkit-text-fill-color: #22304a !important;
+        margin-bottom: 8px !important;
+        display: block !important;
+        position: static !important;
+    }
+
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        background-color: #ffffff !important;
+        border: 1px solid #b8d7ff !important;
+        border-radius: 16px !important;
+        min-height: 52px !important;
+        color: #243047 !important;
     }
 
     .friendly-card {
@@ -262,6 +291,25 @@ st.markdown(
         border-radius: 16px !important;
         min-height: 48px !important;
         box-shadow: 0 3px 10px rgba(120, 145, 190, 0.07) !important;
+    }
+
+    [data-testid="stSelectbox"] label,
+    [data-testid="stRadio"] > label,
+    [data-testid="stTextInput"] label,
+    [data-testid="stSlider"] label {
+        position: static !important;
+        display: block !important;
+        color: #22304a !important;
+        -webkit-text-fill-color: #22304a !important;
+        font-weight: 700 !important;
+        margin-bottom: 6px !important;
+        z-index: 3 !important;
+        background: transparent !important;
+    }
+
+    [data-testid="stSelectbox"] {
+        margin-top: 4px !important;
+        margin-bottom: 14px !important;
     }
 
     div[data-baseweb="select"] *,
@@ -1938,7 +1986,10 @@ PAGES = [
 
 st.sidebar.title("🏠 ເມນູ")
 st.sidebar.caption(APP_VERSION)
-st.sidebar.info("ໂທລະສັບ: ເລືອກໜ້າຈາກກ່ອງດ້ານລຸ່ມ. ຫຼັງເລືອກແລ້ວ ປິດເມນູດ້ານຂ້າງໄດ້.")
+st.sidebar.info(
+    "ເລືອກໜ້າຢູ່ທາງຂ້າງນີ້. "
+    "ໃນໂທລະສັບ ກົດປຸ່ມ >> ເພື່ອເປີດເມນູ."
+)
 
 if st.session_state.get("mobile_page_selector") == "ຜົນລະອຽດ":
     st.session_state["mobile_page_selector"] = "ລາຍງານຜົນລະອຽດ"
@@ -1951,8 +2002,8 @@ def clear_forced_page():
     st.session_state["forced_page"] = None
 
 
-selected_page = st.selectbox(
-    "📱 ເລືອກໜ້າ",
+selected_page = st.sidebar.selectbox(
+    "ເລືອກໜ້າ",
     PAGES,
     index=0,
     key="mobile_page_selector",
